@@ -2,6 +2,10 @@
 
 A simple Rust program to analyze storage drives, calculate space usage, and provide insights into file and folder distributions.
 
+![Static Badge](https://img.shields.io/badge/Version-Prototype-%23e81919?style=flat&color=%23e81919)
+![Static Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
+![Static Badge](https://img.shields.io/badge/Latest_Update-06%2F01%2F2025-%2318a5a3)
+
 ---
 
 ## Features
