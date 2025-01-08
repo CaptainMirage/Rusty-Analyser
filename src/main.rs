@@ -1,15 +1,22 @@
 use std::path::Path;
-use std::io::{self, BufRead};
+use std::io::{self};
 use rayon::prelude::*;
 use serde::Serialize;
 use chrono::{Duration, Utc, DateTime, TimeZone};
 use walkdir::WalkDir;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::fs;
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
 use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
 use winapi::um::winbase::DRIVE_FIXED;
+use winapi::um::fileapi::GetDiskFreeSpaceExW;
+use std::ffi::OsStr;
+use std::os::windows::ffi::OsStrExt;
+use ctrlc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+
 
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
@@ -47,12 +54,6 @@ impl StorageAnalyzer {
     fn list_drives() -> Vec<String> {
         #[cfg(target_os = "windows")]
         {
-            // Windows: Use environment variables or winapi to get drives
-            use std::ffi::OsString;
-            use std::os::windows::ffi::OsStringExt;
-            use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
-            use winapi::um::winbase::DRIVE_FIXED;
-
             let mut buffer = [0u16; 256];
             let len = unsafe { GetLogicalDriveStringsW(buffer.len() as u32, buffer.as_mut_ptr()) };
 
@@ -154,16 +155,41 @@ impl StorageAnalyzer {
     }
 
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
-        let metadata = fs::metadata(drive)?;
-        let total_size = metadata.len() as f64 / 1_073_741_824.0;
-        let free_size = fs::metadata(drive)?.len() as f64 / 1_073_741_824.0; // Replace with actual free space logic
-        let used_size = total_size - free_size;
-    
+        
+        use winapi::um::winnt::ULARGE_INTEGER;
+        let mut free_bytes_available: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
+        let mut total_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
+        let mut total_free_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
+
+        // Convert drive to a wide string
+        let wide_drive: Vec<u16> = OsStr::new(drive)
+            .encode_wide()
+            .chain(Some(0)) // Null-terminate the string
+            .collect();
+
+        let success = unsafe {
+            GetDiskFreeSpaceExW(
+                wide_drive.as_ptr(),
+                &mut free_bytes_available as *mut _ as *mut _,
+                &mut total_bytes as *mut _ as *mut _,
+                &mut total_free_bytes as *mut _ as *mut _,
+            )
+        };
+
+        if success == 0 {
+            return Err(io::Error::last_os_error());
+        }
+
+        // Convert ULARGE_INTEGER fields to f64
+        let total_size = unsafe { *total_bytes.QuadPart() } as f64 / 1_073_741_824.0;
+        let free_space = unsafe { *total_free_bytes.QuadPart() } as f64 / 1_073_741_824.0;
+        let used_space = total_size - free_space;
+
         Ok(DriveAnalysis {
             total_size,
-            used_space: used_size,
-            free_space: free_size,
-            free_space_percent: (free_size / total_size) * 100.0,
+            used_space,
+            free_space,
+            free_space_percent: (free_space / total_size) * 100.0,
         })
     }
 
@@ -334,6 +360,22 @@ impl StorageAnalyzer {
 }
 
 fn main() -> io::Result<()> {
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
+    ctrlc::set_handler(move || {
+        r.store(false, Ordering::SeqCst);
+    })
+        .expect("Error setting Ctrl-C handler");
+
     let analyzer = StorageAnalyzer::new();
-    analyzer.run()
+    for drive in &analyzer.drives {
+        if !running.load(Ordering::SeqCst) {
+            println!("Exiting gracefully...");
+            break;
+        }
+        analyzer.analyze_drive(&drive)?;
+    }
+
+    Ok(())
 }
