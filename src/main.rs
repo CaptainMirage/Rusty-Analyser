@@ -10,6 +10,8 @@ use walkdir::WalkDir;
 use std::time::{SystemTime, UNIX_EPOCH};
 use sysinfo::{System, Disk};
 
+// currently everything is broken
+
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
     total_size: f64,
