@@ -13,7 +13,7 @@ A simple Rust program to analyze storage drives, calculate space usage, and prov
 - Drive space metrics (total, used, free)
 - Largest folders identification
 - File type distribution analysis
-- Largest files listing
+- Largest files listing [Coming soon?]
 - Recently modified large files >100MB [Coming Soon]
 - Old unused large files >100MB [Coming Soon]
 
