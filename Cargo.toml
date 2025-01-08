@@ -1,6 +1,6 @@
 [package]
 name = "Rusty-System-Analyser"
-version = "6.9.42"
+version = "0.01.1"
 edition = "2021"
 
 [dependencies]
