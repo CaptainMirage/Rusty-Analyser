@@ -6,6 +6,10 @@ use chrono::{Duration, Utc, DateTime, TimeZone};
 use walkdir::WalkDir;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::fs;
+use std::ffi::OsString;
+use std::os::windows::ffi::OsStringExt;
+use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
+use winapi::um::winbase::DRIVE_FIXED;
 
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
@@ -36,79 +40,70 @@ pub struct StorageAnalyzer {
 
 impl StorageAnalyzer {
     pub fn new() -> Self {
-        let drives = StorageAnalyzer::list_drives().unwrap_or_else(|_| Vec::new());
+        let drives = StorageAnalyzer::list_drives();
         StorageAnalyzer { drives }
     }
 
-    /// Cross-platform function to list drives
-    fn list_drives() -> io::Result<Vec<String>> {
+    fn list_drives() -> Vec<String> {
         #[cfg(target_os = "windows")]
         {
             // Windows: Use environment variables or winapi to get drives
-            Ok(StorageAnalyzer::list_drives_windows()?)
+            use std::ffi::OsString;
+            use std::os::windows::ffi::OsStringExt;
+            use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
+            use winapi::um::winbase::DRIVE_FIXED;
+
+            let mut buffer = [0u16; 256];
+            let len = unsafe { GetLogicalDriveStringsW(buffer.len() as u32, buffer.as_mut_ptr()) };
+
+            if len == 0 {
+                return Vec::new();
+            }
+
+            buffer[..len as usize]
+                .split(|&c| c == 0)
+                .filter_map(|slice| {
+                    if slice.is_empty() {
+                        None
+                    } else {
+                        let drive = OsString::from_wide(slice).to_string_lossy().into_owned();
+                        let drive_type = unsafe { GetDriveTypeW(slice.as_ptr()) };
+                        if drive_type == DRIVE_FIXED {
+                            Some(drive)
+                        } else {
+                            None
+                        }
+                    }
+                })
+                .collect()
         }
 
         #[cfg(not(target_os = "windows"))]
         {
-            // Unix-based: Parse mount points from /proc/mounts
-            Ok(StorageAnalyzer::list_drives_unix()?)
+            // Unix-based: Return a placeholder empty vector for now
+            Vec::new()
         }
     }
-
-    #[cfg(target_os = "windows")]
-    fn list_drives_windows() -> io::Result<Vec<String>> {
-        use std::process::Command;
-        let output = Command::new("cmd")
-            .args(&["/C", "wmic logicaldisk get name"])
-            .output()?;
-        let drives: Vec<String> = String::from_utf8_lossy(&output.stdout)
-            .lines()
-            .skip(1) // Skip the header row
-            .filter_map(|line| {
-                let drive = line.trim();
-                if drive.is_empty() {
-                    None
-                } else {
-                    Some(drive.to_string())
-                }
-            })
-            .collect();
-        Ok(drives)
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    fn list_drives_unix() -> io::Result<Vec<String>> {
-        let file = fs::File::open("/proc/mounts")?;
-        let reader = io::BufReader::new(file);
-
-        let drives: Vec<String> = reader
-            .lines()
-            .filter_map(|line| {
-                let line = line.ok()?;
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() > 1 {
-                    Some(parts[1].to_string()) // Mount point
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        Ok(drives)
-    }
-
+    
     fn analyze_drive(&self, drive: &str) -> io::Result<()> {
         println!("\n====== STORAGE DISTRIBUTION ANALYSIS ======");
         println!("Date: {}", Utc::now().format("%Y-%m-%d %H:%M:%S"));
         println!("Drive: {}", drive);
         println!("========================================\n");
 
-        let drive_analysis = self.get_drive_space(drive)?;
-        println!("Drive Space Overview:");
-        println!("Total Size (GB): {:.2}", drive_analysis.total_size);
-        println!("Used Space (GB): {:.2}", drive_analysis.used_space);
-        println!("Free Space (GB): {:.2}", drive_analysis.free_space);
-        println!("Free Space (%): {:.2}", drive_analysis.free_space_percent);
+        match self.get_drive_space(drive) {
+            Ok(drive_analysis) => {
+                println!("Drive Space Overview:");
+                println!("Total Size (GB): {:.2}", drive_analysis.total_size);
+                println!("Used Space (GB): {:.2}", drive_analysis.used_space);
+                println!("Free Space (GB): {:.2}", drive_analysis.free_space);
+                println!("Free Space (%): {:.2}", drive_analysis.free_space_percent);
+            }
+            Err(e) => {
+                eprintln!("Failed to analyze drive '{}': {}", drive, e);
+                return Ok(());
+            }
+        }
 
         println!("\nLargest Folders (Top 10):");
         let largest_folders = self.get_largest_folders(drive)?;
@@ -330,7 +325,9 @@ impl StorageAnalyzer {
 
     fn run(&self) -> io::Result<()> {
         for drive in &self.drives {
-            self.analyze_drive(drive)?;
+            if let Err(e) = self.analyze_drive(drive) {
+                eprintln!("Error analyzing drive '{}': {}", drive, e);
+            }
         }
         Ok(())
     }
