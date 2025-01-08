@@ -1,16 +1,11 @@
 use std::path::Path;
-#[allow(unused_imports)]
-use std::fs; // for unix based shit
 use std::io;
 use rayon::prelude::*;
 use serde::Serialize;
-#[allow(unused_imports)]
-use chrono::{Duration, Utc, DateTime}; // for unix based shit pt.2
+use chrono::{Duration, Utc, DateTime};
 use walkdir::WalkDir;
 use std::time::{SystemTime, UNIX_EPOCH};
 use sysinfo::{System, Disk};
-
-// currently everything is broken
 
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
@@ -32,6 +27,7 @@ struct FileInfo {
     full_path: String,
     size_mb: f64,
     last_modified: String,
+    last_accessed: Option<String>,  // Added for access time tracking
 }
 
 struct StorageAnalyzer {
@@ -40,10 +36,8 @@ struct StorageAnalyzer {
 
 impl StorageAnalyzer {
     fn new() -> Self {
-        // We display all disks' information:
-        println!("=> disks:");
         let mut system = System::new_all();
-        system.refresh_all(); // Adjusted for API change
+        system.refresh_all();
 
         let drives: Vec<String> = system
             .disks()
@@ -66,22 +60,49 @@ impl StorageAnalyzer {
         println!("Free Space (GB): {:.2}", drive_analysis.free_space);
         println!("Free Space (%): {:.2}", drive_analysis.free_space_percent);
 
-        println!("\nLargest Folders:");
+        println!("\nLargest Folders (Top 10):");
         let largest_folders = self.get_largest_folders(drive)?;
         for folder in largest_folders.iter().take(10) {
-            println!("{:?}", folder);
+            println!("Folder: {}", folder.folder);
+            println!("Size (GB): {:.2}", folder.size_gb);
+            println!("File Count: {}", folder.file_count);
+            println!("---");
         }
 
-        println!("\nFile Type Distribution:");
+        println!("\nFile Type Distribution (Top 10):");
         let file_type_distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in file_type_distribution.iter().take(10) {
             println!("Extension: {}, Count: {}, Size (GB): {:.2}", ext, count, size);
         }
 
-        println!("\nLargest Individual Files:");
+        println!("\nLargest Individual Files (Top 10):");
         let largest_files = self.get_largest_files(drive)?;
         for file in largest_files.iter().take(10) {
-            println!("{:?}", file);
+            println!("Path: {}", file.full_path);
+            println!("Size (MB): {:.2}", file.size_mb);
+            println!("Last Modified: {}", file.last_modified);
+            println!("---");
+        }
+
+        println!("\nRecently Modified Large Files (>100MB, Last 30 days):");
+        let recent_large_files = self.get_recent_large_files(drive)?;
+        for file in recent_large_files {
+            println!("Path: {}", file.full_path);
+            println!("Size (MB): {:.2}", file.size_mb);
+            println!("Last Modified: {}", file.last_modified);
+            println!("---");
+        }
+
+        println!("\nOld Large Files (>100MB, Not accessed in 6 months):");
+        let old_large_files = self.get_old_large_files(drive)?;
+        for file in old_large_files {
+            println!("Path: {}", file.full_path);
+            println!("Size (MB): {:.2}", file.size_mb);
+            println!("Last Modified: {}", file.last_modified);
+            if let Some(last_accessed) = file.last_accessed {
+                println!("Last Accessed: {}", last_accessed);
+            }
+            println!("---");
         }
 
         Ok(())
@@ -89,7 +110,7 @@ impl StorageAnalyzer {
 
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
         let mut system = System::new_all();
-        system.refresh_all(); // Adjusted for API change
+        system.refresh_all();
 
         if let Some(disk) = system.disks().iter().find(|&disk| disk.mount_point().to_str() == Some(drive)) {
             let total_size = disk.total_space() as f64 / 1_073_741_824.0;
@@ -109,16 +130,22 @@ impl StorageAnalyzer {
 
     fn get_largest_folders(&self, drive: &str) -> io::Result<Vec<FolderSize>> {
         let mut folders = Vec::new();
-
-        for entry in WalkDir::new(drive)
+        let walker = WalkDir::new(drive)
+            .min_depth(1)  // Skip the root directory
             .max_depth(3)  // Limit depth to prevent extremely long processing
             .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().is_dir())
-        {
+            .filter_entry(|e| {
+                // Skip hidden directories and system folders
+                !e.file_name()
+                    .to_str()
+                    .map(|s| s.starts_with('.'))
+                    .unwrap_or(false)
+            });
+
+        for entry in walker.filter_map(|e| e.ok()).filter(|e| e.file_type().is_dir()) {
             match self.calculate_folder_size(entry.path()) {
-                Ok(folder_size) => folders.push(folder_size),
-                Err(_) => continue, // Skip folders with access issues
+                Ok(folder_size) if folder_size.size_gb > 0.1 => folders.push(folder_size), // Only include folders > 100MB
+                _ => continue,
             }
         }
 
@@ -180,33 +207,80 @@ impl StorageAnalyzer {
     }
 
     fn get_largest_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        let mut files: Vec<_> = WalkDir::new(drive)
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .filter(|e| e.file_type().is_file())
-            .filter_map(|entry| {
-                let metadata = entry.metadata().ok()?;
-                let file_size = metadata.len();
-                let last_modified = metadata.modified().ok()?;
-
-                Some(FileInfo {
-                    full_path: entry.path().to_string_lossy().to_string(),
-                    size_mb: file_size as f64 / 1_048_576.0,
-                    last_modified: Self::system_time_to_string(last_modified),
-                })
-            })
-            .collect();
-
+        let mut files = self.collect_files(drive, None, None)?;
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
     }
 
+    fn get_recent_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        let thirty_days_ago = Utc::now() - Duration::days(30);
+        let mut files = self.collect_files(drive, Some(thirty_days_ago), Some(100.0))?;
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
+    }
+
+    fn get_old_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        let six_months_ago = Utc::now() - Duration::days(180);
+        let mut files = self.collect_files(drive, None, Some(100.0))?;
+        files.retain(|file| {
+            if let Ok(modified) = DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S") {
+                modified < six_months_ago.into()
+            } else {
+                false
+            }
+        });
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
+    }
+
+    fn collect_files(&self, drive: &str, after_date: Option<DateTime<Utc>>, min_size_mb: Option<f64>) -> io::Result<Vec<FileInfo>> {
+        let mut files = Vec::new();
+
+        for entry in WalkDir::new(drive)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_file())
+        {
+            if let Ok(metadata) = entry.metadata() {
+                let file_size = metadata.len() as f64 / 1_048_576.0;  // Convert to MB
+
+                // Skip if file is smaller than minimum size
+                if let Some(min_size) = min_size_mb {
+                    if file_size < min_size {
+                        continue;
+                    }
+                }
+
+                let last_modified = metadata.modified().ok().map(Self::system_time_to_string);
+                let last_accessed = metadata.accessed().ok().map(Self::system_time_to_string);
+
+                if let Some(last_modified_str) = last_modified {
+                    // Skip if file is older than after_date
+                    if let Some(after) = after_date {
+                        if let Ok(modified) = DateTime::parse_from_str(&last_modified_str, "%Y-%m-%d %H:%M:%S") {
+                            if modified < after.into() {
+                                continue;
+                            }
+                        }
+                    }
+
+                    files.push(FileInfo {
+                        full_path: entry.path().to_string_lossy().to_string(),
+                        size_mb: file_size,
+                        last_modified: last_modified_str,
+                        last_accessed,
+                    });
+                }
+            }
+        }
+
+        Ok(files)
+    }
+
     fn system_time_to_string(system_time: SystemTime) -> String {
-        let datetime: DateTime<Utc> = match system_time.duration_since(UNIX_EPOCH) {
-            Ok(duration) => DateTime::from_timestamp(duration.as_secs() as i64, 0)
-                .unwrap_or_else(|| Utc::now()),
-            Err(_) => Utc::now(),
-        };
+        let datetime: DateTime<Utc> = system_time.duration_since(UNIX_EPOCH)
+            .map(|duration| DateTime::from_timestamp(duration.as_secs() as i64, 0).unwrap_or_else(|| Utc::now()))
+            .unwrap_or_else(|_| Utc::now());
         datetime.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
