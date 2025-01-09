@@ -293,8 +293,7 @@ impl StorageAnalyzer {
         let mut files = self.collect_files(drive, None, Some(100.0))?;
 
         files.retain(|file| {
-            if let Ok(modified) = 
-                DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
+            if let Ok(modified) = DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
             {
                 modified.with_timezone(&Utc) < six_months_ago
             } else {
@@ -361,15 +360,6 @@ impl StorageAnalyzer {
             .map(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).unwrap())
             .unwrap_or_else(|_| Utc::now());
         datetime.format("%Y-%m-%d %H:%M:%S").to_string()
-    }
-
-    fn run(&self) -> io::Result<()> {
-        for drive in &self.drives {
-            if let Err(e) = self.analyze_drive(drive) {
-                eprintln!("Error analyzing drive '{}': {}", drive, e);
-            }
-        }
-        Ok(())
     }
 }
 
