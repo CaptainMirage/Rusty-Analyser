@@ -81,6 +81,7 @@ impl StorageAnalyzer {
         #[cfg(not(target_os = "windows"))]
         {
             // Unix-based: Return a placeholder empty vector for now
+            // (still not sure how to do it)
             Vec::new()
         }
     }
