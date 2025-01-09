@@ -1,21 +1,20 @@
-use std::path::Path;
-use std::io::{self};
+use chrono::{DateTime, Duration, TimeZone, Utc};
+use ctrlc;
 use rayon::prelude::*;
 use serde::Serialize;
-use chrono::{Duration, Utc, DateTime, TimeZone};
-use walkdir::WalkDir;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::ffi::OsStr;
 use std::ffi::OsString;
+use std::io::{self};
+use std::os::windows::ffi::OsStrExt;
 use std::os::windows::ffi::OsStringExt;
+use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
+use walkdir::WalkDir;
+use winapi::um::fileapi::GetDiskFreeSpaceExW;
 use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
 use winapi::um::winbase::DRIVE_FIXED;
-use winapi::um::fileapi::GetDiskFreeSpaceExW;
-use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
-use ctrlc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
 
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
@@ -85,7 +84,7 @@ impl StorageAnalyzer {
             Vec::new()
         }
     }
-    
+
     fn analyze_drive(&self, drive: &str) -> io::Result<()> {
         println!("\n====== STORAGE DISTRIBUTION ANALYSIS ======");
         println!("Date: {}", Utc::now().format("%Y-%m-%d %H:%M:%S"));
@@ -118,7 +117,10 @@ impl StorageAnalyzer {
         println!("\nFile Type Distribution (Top 10):");
         let file_type_distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in file_type_distribution.iter().take(10) {
-            println!("Extension: {}, Count: {}, Size (GB): {:.2}", ext, count, size);
+            println!(
+                "Extension: {}, Count: {}, Size (GB): {:.2}",
+                ext, count, size
+            );
         }
 
         println!("\nLargest Individual Files (Top 10):");
@@ -155,7 +157,6 @@ impl StorageAnalyzer {
     }
 
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
-        
         use winapi::um::winnt::ULARGE_INTEGER;
         let mut free_bytes_available: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
         let mut total_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
@@ -193,7 +194,6 @@ impl StorageAnalyzer {
         })
     }
 
-
     fn get_largest_folders(&self, drive: &str) -> io::Result<Vec<FolderSize>> {
         let mut folders = Vec::new();
         let walker = WalkDir::new(drive)
@@ -207,7 +207,10 @@ impl StorageAnalyzer {
                     .unwrap_or(false)
             });
 
-        for entry in walker.filter_map(|e| e.ok()).filter(|e| e.file_type().is_dir()) {
+        for entry in walker
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().is_dir())
+        {
             match self.calculate_folder_size(entry.path()) {
                 Ok(folder_size) if folder_size.size_gb > 0.1 => folders.push(folder_size),
                 _ => continue,
@@ -245,7 +248,8 @@ impl StorageAnalyzer {
             .filter_map(|e| e.ok())
             .filter(|e| e.file_type().is_file())
         {
-            let ext = entry.path()
+            let ext = entry
+                .path()
                 .extension()
                 .map(|e| e.to_string_lossy().to_lowercase())
                 .unwrap_or_else(|| "(No Extension)".to_string());
@@ -289,7 +293,9 @@ impl StorageAnalyzer {
         let mut files = self.collect_files(drive, None, Some(100.0))?;
 
         files.retain(|file| {
-            if let Ok(modified) = DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S") {
+            if let Ok(modified) = 
+                DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
+            {
                 modified.with_timezone(&Utc) < six_months_ago
             } else {
                 false
@@ -300,7 +306,12 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
-    fn collect_files(&self, drive: &str, after_date: Option<DateTime<Utc>>, min_size_mb: Option<f64>) -> io::Result<Vec<FileInfo>> {
+    fn collect_files(
+        &self,
+        drive: &str,
+        after_date: Option<DateTime<Utc>>,
+        min_size_mb: Option<f64>,
+    ) -> io::Result<Vec<FileInfo>> {
         let mut files = Vec::new();
 
         for entry in WalkDir::new(drive)
@@ -322,7 +333,9 @@ impl StorageAnalyzer {
 
                 if let Some(last_modified_str) = last_modified {
                     if let Some(after) = after_date {
-                        if let Ok(modified) = DateTime::parse_from_str(&last_modified_str, "%Y-%m-%d %H:%M:%S") {
+                        if let Ok(modified) =
+                            DateTime::parse_from_str(&last_modified_str, "%Y-%m-%d %H:%M:%S")
+                        {
                             if modified.with_timezone(&Utc) < after {
                                 continue;
                             }
@@ -343,7 +356,8 @@ impl StorageAnalyzer {
     }
 
     fn system_time_to_string(system_time: SystemTime) -> String {
-        let datetime: DateTime<Utc> = system_time.duration_since(UNIX_EPOCH)
+        let datetime: DateTime<Utc> = system_time
+            .duration_since(UNIX_EPOCH)
             .map(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).unwrap())
             .unwrap_or_else(|_| Utc::now());
         datetime.format("%Y-%m-%d %H:%M:%S").to_string()
@@ -366,7 +380,7 @@ fn main() -> io::Result<()> {
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
     })
-        .expect("Error setting Ctrl-C handler");
+    .expect("Error setting Ctrl-C handler");
 
     let analyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives {
