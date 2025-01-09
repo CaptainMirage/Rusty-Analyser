@@ -17,7 +17,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 
-
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
     total_size: f64,
