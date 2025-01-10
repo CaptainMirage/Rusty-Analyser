@@ -4,7 +4,7 @@ use rayon::prelude::*;
 use serde::Serialize;
 use std::ffi::OsStr;
 use std::ffi::OsString;
-use std::io::{self, Read};
+use std::io::{self};
 use std::os::windows::ffi::OsStrExt;
 use std::os::windows::ffi::OsStringExt;
 use std::path::Path;
