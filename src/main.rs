@@ -1,29 +1,20 @@
 use chrono::{DateTime, Duration, TimeZone, Utc};
+use ctrlc;
 use rayon::prelude::*;
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    ffi::{OsStr, OsString},
-    io::{self, Error, ErrorKind},
-    os::windows::ffi::{OsStrExt, OsStringExt},
-    path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::ffi::OsStr;
+use std::ffi::OsString;
+use std::io::{self, Read};
+use std::os::windows::ffi::OsStrExt;
+use std::os::windows::ffi::OsStringExt;
+use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
-use winapi::um::{
-    fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
-    winbase::DRIVE_FIXED,
-};
-
-// Constants
-const GB_TO_BYTES: f64 = 1_073_741_824.0;
-const MB_TO_BYTES: f64 = 1_048_576.0;
-const MIN_FOLDER_SIZE_GB: f64 = 0.1;
-const MIN_FILE_TYPE_SIZE_GB: f64 = 0.01;
+use winapi::um::fileapi::GetDiskFreeSpaceExW;
+use winapi::um::fileapi::{GetDriveTypeW, GetLogicalDriveStringsW};
+use winapi::um::winbase::DRIVE_FIXED;
 
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
@@ -46,13 +37,6 @@ struct FileInfo {
     size_mb: f64,
     last_modified: String,
     last_accessed: Option<String>,
-}
-
-// New type for file type statistics
-#[derive(Debug)]
-struct FileTypeStats {
-    total_size: u64,
-    count: usize,
 }
 
 pub struct StorageAnalyzer {
@@ -194,7 +178,7 @@ impl StorageAnalyzer {
         };
 
         if success == 0 {
-            return Err(Error::last_os_error());
+            return Err(io::Error::last_os_error());
         }
 
         // Convert ULARGE_INTEGER fields to f64
@@ -257,7 +241,7 @@ impl StorageAnalyzer {
     }
 
     fn get_file_type_distribution(&self, drive: &str) -> io::Result<Vec<(String, f64, usize)>> {
-        let mut file_types = HashMap::new();
+        let mut file_types = std::collections::HashMap::new();
 
         for entry in WalkDir::new(drive)
             .into_iter()
