@@ -1,3 +1,4 @@
+#![allow(clippy::duplicate_mod)]
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use rayon::prelude::*;
 use serde::Serialize;
@@ -223,13 +224,11 @@ impl StorageAnalyzer {
     }
 
     fn system_time_to_string(system_time: SystemTime) -> String {
-        system_time
+        let datetime: DateTime<Utc> = system_time
             .duration_since(UNIX_EPOCH)
-            .ok()
-            .and_then(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).single())
-            .unwrap_or_else(Utc::now)
-            .format(DATE_FORMAT)
-            .to_string()
+            .map(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).unwrap())
+            .unwrap_or_else(|_| Utc::now());
+        datetime.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
@@ -349,64 +348,25 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\nRecent Large Files (>100MB, last 30 days):");
+    fn get_recent_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
         let thirty_days_ago = Utc::now() - Duration::days(30);
-
-        if let Some(files) = self.file_cache.get(drive) {
-            let mut recent_files: Vec<_> = files.iter()
-                .filter(|file| {
-                    file.size_mb >= 100.0 &&
-                        DateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
-                            .map(|dt| dt.with_timezone(&Utc) >= thirty_days_ago)
-                            .unwrap_or(false)
-                })
-                .cloned()
-                .collect();
-
-            recent_files.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-
-            for file in recent_files.iter().take(10) {
-                println!("Path: {}", file.full_path);
-                println!("Size (MB): {:.2}", file.size_mb);
-                println!("Last Modified: {}", file.last_modified);
-                if let Some(last_accessed) = &file.last_accessed {
-                    println!("Last Accessed: {}", last_accessed);
-                }
-                println!("---");
-            }
-        }
-        Ok(())
+        let mut files = self.collect_files(drive, Some(thirty_days_ago), Some(100.0))?;
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
     }
 
-    fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\nOld Large Files (>100MB, older than 6 months):");
+    fn get_old_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
         let six_months_ago = Utc::now() - Duration::days(180);
+        let mut files = self.collect_files(drive, None, Some(100.0))?;
 
-        if let Some(files) = self.file_cache.get(drive) {
-            let mut old_files: Vec<_> = files.iter()
-                .filter(|file| {
-                    file.size_mb >= 100.0 &&
-                        DateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
-                            .map(|dt| dt.with_timezone(&Utc) < six_months_ago)
-                            .unwrap_or(false)
-                })
-                .cloned()
-                .collect();
+        files.retain(|file| {
+            DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
+                .map(|dt| dt.with_timezone(&Utc) < six_months_ago)
+                .unwrap_or(false)
+        });
 
-            old_files.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-
-            for file in old_files.iter().take(10) {
-                println!("Path: {}", file.full_path);
-                println!("Size (MB): {:.2}", file.size_mb);
-                println!("Last Modified: {}", file.last_modified);
-                if let Some(last_accessed) = &file.last_accessed {
-                    println!("Last Accessed: {}", last_accessed);
-                }
-                println!("---");
-            }
-        }
-        Ok(())
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
     }
 }
 
