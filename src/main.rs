@@ -241,8 +241,8 @@ impl StorageAnalyzer {
         self.print_largest_folders(drive)?;
         self.print_file_type_distribution(drive)?;
         self.print_largest_files(drive)?;
-        self.print_recent_large_files(drive)?;
-        self.print_old_large_files(drive)?;
+        self.get_recent_large_files(drive)?;
+        self.get_old_large_files(drive)?;
 
         Ok(())
     }
@@ -348,16 +348,42 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    fn get_recent_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
+    fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        // First, ensure files are cached
+        self.collect_and_cache_files(drive)?;
+
+        // Get the cached files
+        let mut files = if let Some(files) = self.file_cache.get(drive) {
+            files.clone()
+        } else {
+            return Ok(Vec::new());
+        };
+
         let thirty_days_ago = Utc::now() - Duration::days(30);
-        let mut files = self.collect_files(drive, Some(thirty_days_ago), Some(100.0))?;
+
+        // Filter for recent files
+        files.retain(|file| {
+            DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
+                .map(|dt| dt.with_timezone(&Utc) > thirty_days_ago)
+                .unwrap_or(false)
+        });
+
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
     }
 
-    fn get_old_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
+    fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        // First, ensure files are cached
+        self.collect_and_cache_files(drive)?;
+
+        // Get the cached files
+        let mut files = if let Some(files) = self.file_cache.get(drive) {
+            files.clone()
+        } else {
+            return Ok(Vec::new());
+        };
+
         let six_months_ago = Utc::now() - Duration::days(180);
-        let mut files = self.collect_files(drive, None, Some(100.0))?;
 
         files.retain(|file| {
             DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
