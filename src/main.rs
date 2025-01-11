@@ -171,19 +171,17 @@ impl StorageAnalyzer {
             files.par_iter()
                 .fold(
                     || HashMap::new(),
-                    |mut acc: HashMap<String, FileTypeStats>, file_info| {
+                    |mut acc, file_info| {
                         let ext = Path::new(&file_info.full_path)
                             .extension()
                             .map(|e| e.to_string_lossy().to_lowercase())
                             .unwrap_or_else(|| "(No Extension)".to_string());
 
                         let size = (file_info.size_mb * MB_TO_BYTES) as u64;
-                        acc.entry(ext.clone())
-                            .or_default()
-                            .total_size += size;
-                        acc.entry(ext.clone())
-                            .or_default()
-                            .count += 1;
+
+                        let stats: &mut FileTypeStats = acc.entry(ext).or_default();
+                        stats.total_size += size;
+                        stats.count += 1;
                         acc
                     },
                 )
@@ -367,9 +365,8 @@ impl StorageAnalyzer {
                 .collect();
 
             recent_files.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-            
-            #[allow(unused_labels)]
-            'NewLargeFiles: for file in recent_files.iter().take(10) {
+
+            for file in recent_files.iter().take(10) {
                 println!("Path: {}", file.full_path);
                 println!("Size (MB): {:.2}", file.size_mb);
                 println!("Last Modified: {}", file.last_modified);
@@ -398,16 +395,14 @@ impl StorageAnalyzer {
                 .collect();
 
             old_files.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-            
-            #[allow(unused_labels)]
-            'OldLargeFiles: for file in old_files.iter().take(10) {
+
+            for file in old_files.iter().take(10) {
                 println!("Path: {}", file.full_path);
                 println!("Size (MB): {:.2}", file.size_mb);
                 println!("Last Modified: {}", file.last_modified);
                 if let Some(last_accessed) = &file.last_accessed {
                     println!("Last Accessed: {}", last_accessed);
                 }
-                
                 println!("---");
             }
         }
@@ -425,14 +420,12 @@ fn main() -> io::Result<()> {
         .expect("Error setting Ctrl-C handler");
 
     let mut analyzer = StorageAnalyzer::new();
-    let drives: Vec<String> = analyzer.drives.clone();  // Clone the drives vector first
-
-    for drive in drives {
+    for drive in &analyzer.drives.clone() {
         if !running.load(Ordering::SeqCst) {
             println!("Exiting gracefully...");
             break;
         }
-        analyzer.analyze_drive(&drive)?;
+        analyzer.analyze_drive(drive)?;
     }
 
     Ok(())
