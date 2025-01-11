@@ -24,6 +24,7 @@ const GB_TO_BYTES: f64 = 1_073_741_824.0;
 const MB_TO_BYTES: f64 = 1_048_576.0;
 const MIN_FOLDER_SIZE_GB: f64 = 0.1;
 const MIN_FILE_TYPE_SIZE_GB: f64 = 0.01;
+const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
 #[derive(Debug, Serialize)]
 struct DriveAnalysis {
@@ -40,7 +41,7 @@ struct FolderSize {
     file_count: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct FileInfo {
     full_path: String,
     size_mb: f64,
@@ -48,8 +49,7 @@ struct FileInfo {
     last_accessed: Option<String>,
 }
 
-// New type for file type statistics
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct FileTypeStats {
     total_size: u64,
     count: usize,
@@ -57,13 +57,16 @@ struct FileTypeStats {
 
 pub struct StorageAnalyzer {
     drives: Vec<String>,
+    file_cache: HashMap<String, Vec<FileInfo>>,
 }
 
-// Implementation of drive-related functionality
 impl StorageAnalyzer {
     pub fn new() -> Self {
         let drives = Self::list_drives();
-        StorageAnalyzer { drives }
+        StorageAnalyzer {
+            drives,
+            file_cache: HashMap::new(),
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -78,12 +81,11 @@ impl StorageAnalyzer {
         buffer[..len as usize]
             .split(|&c| c == 0)
             .filter_map(|slice| {
-                if slice.is_empty() {
-                    return None;
-                }
-                let drive = OsString::from_wide(slice).to_string_lossy().into_owned();
-                let drive_type = unsafe { GetDriveTypeW(slice.as_ptr()) };
-                (drive_type == DRIVE_FIXED).then_some(drive)
+                (!slice.is_empty()).then(|| {
+                    let drive = OsString::from_wide(slice);
+                    let drive_type = unsafe { GetDriveTypeW(slice.as_ptr()) };
+                    (drive_type == DRIVE_FIXED).then(|| drive.to_string_lossy().into_owned())
+                }).flatten()
             })
             .collect()
     }
@@ -99,10 +101,7 @@ impl StorageAnalyzer {
         let mut total_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
         let mut total_free_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
 
-        let wide_drive: Vec<u16> = OsStr::new(drive)
-            .encode_wide()
-            .chain(Some(0))
-            .collect();
+        let wide_drive: Vec<u16> = OsStr::new(drive).encode_wide().chain(Some(0)).collect();
 
         let success = unsafe {
             GetDiskFreeSpaceExW(
@@ -128,13 +127,116 @@ impl StorageAnalyzer {
             free_space_percent: (free_space / total_size) * 100.0,
         })
     }
-    
-}
-// Implementation of analysis functionality
-impl StorageAnalyzer {
-    pub fn analyze_drive(&self, drive: &str) -> io::Result<()> {
+
+    fn collect_and_cache_files(&mut self, drive: &str) -> io::Result<()> {
+        if self.file_cache.contains_key(drive) {
+            return Ok(());
+        }
+
+        let files: Vec<FileInfo> = WalkDir::new(drive)
+            .into_iter()
+            .par_bridge()
+            .filter_map(Result::ok)
+            .filter(|e| e.file_type().is_file())
+            .filter_map(|entry| {
+                entry.metadata().ok().map(|metadata| {
+                    let file_size = metadata.len() as f64 / MB_TO_BYTES;
+                    let last_modified = metadata
+                        .modified()
+                        .ok()
+                        .map(Self::system_time_to_string);
+                    let last_accessed = metadata
+                        .accessed()
+                        .ok()
+                        .map(Self::system_time_to_string);
+
+                    last_modified.map(|modified| FileInfo {
+                        full_path: entry.path().to_string_lossy().to_string(),
+                        size_mb: file_size,
+                        last_modified: modified,
+                        last_accessed,
+                    })
+                }).flatten()
+            })
+            .collect();
+
+        self.file_cache.insert(drive.to_string(), files);
+        Ok(())
+    }
+
+    fn get_file_type_distribution(&mut self, drive: &str) -> io::Result<Vec<(String, f64, usize)>> {
+        self.collect_and_cache_files(drive)?;
+
+        let file_types: HashMap<String, FileTypeStats> = if let Some(files) = self.file_cache.get(drive) {
+            files.par_iter()
+                .fold(
+                    || HashMap::new(),
+                    |mut acc: HashMap<String, FileTypeStats>, file_info| {
+                        let ext = Path::new(&file_info.full_path)
+                            .extension()
+                            .map(|e| e.to_string_lossy().to_lowercase())
+                            .unwrap_or_else(|| "(No Extension)".to_string());
+
+                        let size = (file_info.size_mb * MB_TO_BYTES) as u64;
+                        acc.entry(ext.clone())
+                            .or_default()
+                            .total_size += size;
+                        acc.entry(ext.clone())
+                            .or_default()
+                            .count += 1;
+                        acc
+                    },
+                )
+                .reduce(
+                    || HashMap::new(),
+                    |mut acc1, acc2| {
+                        for (ext, stats2) in acc2 {
+                            let stats1 = acc1.entry(ext).or_default();
+                            stats1.total_size += stats2.total_size;
+                            stats1.count += stats2.count;
+                        }
+                        acc1
+                    },
+                )
+        } else {
+            HashMap::new()
+        };
+
+        let mut distribution: Vec<_> = file_types
+            .into_iter()
+            .map(|(ext, stats)| (ext, stats.total_size as f64 / GB_TO_BYTES, stats.count))
+            .filter(|&(_, size, _)| size > MIN_FILE_TYPE_SIZE_GB)
+            .collect();
+
+        distribution.par_sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        Ok(distribution)
+    }
+
+    fn get_largest_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        self.collect_and_cache_files(drive)?;
+
+        if let Some(files) = self.file_cache.get(drive) {
+            let mut result = files.clone();
+            result.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+            Ok(result)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn system_time_to_string(system_time: SystemTime) -> String {
+        system_time
+            .duration_since(UNIX_EPOCH)
+            .ok()
+            .and_then(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).single())
+            .unwrap_or_else(Utc::now)
+            .format(DATE_FORMAT)
+            .to_string()
+    }
+
+    pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         println!("\n====== STORAGE DISTRIBUTION ANALYSIS ======");
-        println!("Date: {}", Utc::now().format("%Y-%m-%d %H:%M:%S"));
+        println!("Date: {}", Utc::now().format(DATE_FORMAT));
         println!("Drive: {}", drive);
         println!("========================================\n");
 
@@ -177,7 +279,7 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    fn print_file_type_distribution(&self, drive: &str) -> io::Result<()> {
+    fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
         println!("\nFile Type Distribution (Top 10):");
         let distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in distribution.iter().take(10) {
@@ -189,26 +291,12 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    fn print_file_info(&self, files: &[&FileInfo]) {
-        for file in files {
-            println!("Path: {}", file.full_path);
-            println!("Size (MB): {:.2}", file.size_mb);
-            println!("Last Modified: {}", file.last_modified);
-            if let Some(last_accessed) = &file.last_accessed {
-                println!("Last Accessed: {}", last_accessed);
-            }
-            println!("---");
-        }
-    }
-}
-
-// Implementation of file collection and processing
-impl StorageAnalyzer {
     fn get_largest_folders(&self, drive: &str) -> io::Result<Vec<FolderSize>> {
         let mut folders = WalkDir::new(drive)
             .min_depth(1)
             .max_depth(3)
             .into_iter()
+            .par_bridge()
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_dir())
             .filter(|e| {
@@ -224,13 +312,14 @@ impl StorageAnalyzer {
             })
             .collect::<Vec<_>>();
 
-        folders.sort_by(|a, b| b.size_gb.partial_cmp(&a.size_gb).unwrap());
+        folders.par_sort_unstable_by(|a, b| b.size_gb.partial_cmp(&a.size_gb).unwrap());
         Ok(folders)
     }
 
     fn calculate_folder_size(&self, path: &Path) -> io::Result<FolderSize> {
         let files: Vec<_> = WalkDir::new(path)
             .into_iter()
+            .par_bridge()
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
             .collect();
@@ -247,139 +336,82 @@ impl StorageAnalyzer {
         })
     }
 
-    fn get_file_type_distribution(&self, drive: &str) -> io::Result<Vec<(String, f64, usize)>> {
-        let mut file_types: HashMap<String, FileTypeStats> = HashMap::new();
-
-        WalkDir::new(drive)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.file_type().is_file())
-            .for_each(|entry| {
-                let ext = entry
-                    .path()
-                    .extension()
-                    .map(|e| e.to_string_lossy().to_lowercase())
-                    .unwrap_or_else(|| "(No Extension)".to_string());
-
-                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-
-                file_types
-                    .entry(ext)
-                    .and_modify(|stats| {
-                        stats.total_size += size;
-                        stats.count += 1;
-                    })
-                    .or_insert(FileTypeStats {
-                        total_size: size,
-                        count: 1,
-                    });
-            });
-
-        let mut distribution: Vec<_> = file_types
-            .into_iter()
-            .map(|(ext, stats)| {
-                (
-                    ext,
-                    stats.total_size as f64 / GB_TO_BYTES,
-                    stats.count,
-                )
-            })
-            .filter(|&(_, size, _)| size > MIN_FILE_TYPE_SIZE_GB)
-            .collect();
-
-        distribution.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        Ok(distribution)
+    fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
+        println!("\nLargest Files (Top 10):");
+        let files = self.get_largest_files(drive)?;
+        for file in files.iter().take(10) {
+            println!("Path: {}", file.full_path);
+            println!("Size (MB): {:.2}", file.size_mb);
+            println!("Last Modified: {}", file.last_modified);
+            if let Some(last_accessed) = &file.last_accessed {
+                println!("Last Accessed: {}", last_accessed);
+            }
+            println!("---");
+        }
+        Ok(())
     }
 
-    fn collect_files(
-        &self,
-        drive: &str,
-        after_date: Option<DateTime<Utc>>,
-        min_size_mb: Option<f64>,
-    ) -> io::Result<Vec<FileInfo>> {
-        let mut files = Vec::new();
+    fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
+        println!("\nRecent Large Files (>100MB, last 30 days):");
+        let thirty_days_ago = Utc::now() - Duration::days(30);
 
-        for entry in WalkDir::new(drive)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.file_type().is_file())
-        {
-            if let Ok(metadata) = entry.metadata() {
-                let file_size = metadata.len() as f64 / MB_TO_BYTES;
+        if let Some(files) = self.file_cache.get(drive) {
+            let mut recent_files: Vec<_> = files.iter()
+                .filter(|file| {
+                    file.size_mb >= 100.0 &&
+                        DateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
+                            .map(|dt| dt.with_timezone(&Utc) >= thirty_days_ago)
+                            .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
 
-                if let Some(min_size) = min_size_mb {
-                    if file_size < min_size {
-                        continue;
-                    }
+            recent_files.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+            
+            #[allow(unused_labels)]
+            'NewLargeFiles: for file in recent_files.iter().take(10) {
+                println!("Path: {}", file.full_path);
+                println!("Size (MB): {:.2}", file.size_mb);
+                println!("Last Modified: {}", file.last_modified);
+                if let Some(last_accessed) = &file.last_accessed {
+                    println!("Last Accessed: {}", last_accessed);
                 }
-
-                let last_modified = metadata
-                    .modified()
-                    .ok()
-                    .map(Self::system_time_to_string);
-
-                let last_accessed = metadata
-                    .accessed()
-                    .ok()
-                    .map(Self::system_time_to_string);
-
-                if let Some(last_modified_str) = last_modified {
-                    if let Some(after) = after_date {
-                        if let Ok(modified) =
-                            DateTime::parse_from_str(&last_modified_str, "%Y-%m-%d %H:%M:%S")
-                        {
-                            if modified.with_timezone(&Utc) < after {
-                                continue;
-                            }
-                        }
-                    }
-
-                    files.push(FileInfo {
-                        full_path: entry.path().to_string_lossy().to_string(),
-                        size_mb: file_size,
-                        last_modified: last_modified_str,
-                        last_accessed,
-                    });
-                }
+                println!("---");
             }
         }
-
-        Ok(files)
+        Ok(())
     }
 
-    fn system_time_to_string(system_time: SystemTime) -> String {
-        let datetime: DateTime<Utc> = system_time
-            .duration_since(UNIX_EPOCH)
-            .map(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).unwrap())
-            .unwrap_or_else(|_| Utc::now());
-        datetime.format("%Y-%m-%d %H:%M:%S").to_string()
-    }
-
-    fn get_largest_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        let mut files = self.collect_files(drive, None, None)?;
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
-    }
-
-    fn get_recent_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        let thirty_days_ago = Utc::now() - Duration::days(30);
-        let mut files = self.collect_files(drive, Some(thirty_days_ago), Some(100.0))?;
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
-    }
-
-    fn get_old_large_files(&self, drive: &str) -> io::Result<Vec<FileInfo>> {
+    fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
+        println!("\nOld Large Files (>100MB, older than 6 months):");
         let six_months_ago = Utc::now() - Duration::days(180);
-        let mut files = self.collect_files(drive, None, Some(100.0))?;
 
-        files.retain(|file| {
-            DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
-                .map(|dt| dt.with_timezone(&Utc) < six_months_ago)
-                .unwrap_or(false)
-        });
+        if let Some(files) = self.file_cache.get(drive) {
+            let mut old_files: Vec<_> = files.iter()
+                .filter(|file| {
+                    file.size_mb >= 100.0 &&
+                        DateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
+                            .map(|dt| dt.with_timezone(&Utc) < six_months_ago)
+                            .unwrap_or(false)
+                })
+                .cloned()
+                .collect();
 
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
+            old_files.par_sort_unstable_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+            
+            #[allow(unused_labels)]
+            'OldLargeFiles: for file in old_files.iter().take(10) {
+                println!("Path: {}", file.full_path);
+                println!("Size (MB): {:.2}", file.size_mb);
+                println!("Last Modified: {}", file.last_modified);
+                if let Some(last_accessed) = &file.last_accessed {
+                    println!("Last Accessed: {}", last_accessed);
+                }
+                
+                println!("---");
+            }
+        }
+        Ok(())
     }
 }
 
@@ -392,13 +424,15 @@ fn main() -> io::Result<()> {
     })
         .expect("Error setting Ctrl-C handler");
 
-    let analyzer = StorageAnalyzer::new();
-    for drive in &analyzer.drives {
+    let mut analyzer = StorageAnalyzer::new();
+    let drives: Vec<String> = analyzer.drives.clone();  // Clone the drives vector first
+
+    for drive in drives {
         if !running.load(Ordering::SeqCst) {
             println!("Exiting gracefully...");
             break;
         }
-        analyzer.analyze_drive(drive)?;
+        analyzer.analyze_drive(&drive)?;
     }
 
     Ok(())
