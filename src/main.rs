@@ -428,5 +428,5 @@ fn main() -> io::Result<()> {
         analyzer.analyze_drive(drive)?;
     }
 
-    Ok(())  
+    Ok(())
 }
