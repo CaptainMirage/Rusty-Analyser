@@ -412,6 +412,13 @@ impl StorageAnalyzer {
 
 // main function to call it all
 fn main() -> io::Result<()> {
+    if cfg!(debug_assertions) {     // development only
+        println!("DEV PROFILE : Running in debug mode!");
+        println!("if you are a normal user, consider using cargo run --release");
+    } else {
+        println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
+    }
+
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
