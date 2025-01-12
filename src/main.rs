@@ -358,7 +358,8 @@ impl StorageAnalyzer {
         }
         Ok(())
     }
-
+    
+    // TODO - fix this shit
     // Gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         // First, ensure files are cached
@@ -384,6 +385,7 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
+    // TODO - fix this shit also
     // Gets old large files (older than 6 months)
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         // First, ensure files are cached
