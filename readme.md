@@ -1,4 +1,4 @@
-# Rusty System Analyser
+# Rusty Analyser
 
 A Rust program that performs comprehensive drive analysis, providing detailed insights into storage usage patterns and file distributions.
 
@@ -25,7 +25,7 @@ This tool analyzes Windows fixed drives to provide detailed storage insights and
 
 1. Clone the repository
 ```bash
-git clone https://github.com/CaptainMirage/Rusty-System-Analyser
+git clone https://github.com/CaptainMirage/Rusty-Analyser
 ```
 2. Install Rust via [rustup](https://rustup.rs/) (Windows)
 3. Build and run:
