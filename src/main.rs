@@ -1,4 +1,3 @@
-#![allow(clippy::duplicate_mod)]
 use chrono::{DateTime, Duration, TimeZone, Utc};
 use rayon::prelude::*;
 use serde::Serialize;
