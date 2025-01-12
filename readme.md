@@ -1,50 +1,59 @@
 # Rusty System Analyser
 
-A simple Rust program to analyze storage drives, calculate space usage, and provide insights into file and folder distributions.
+A Rust program that performs comprehensive drive analysis, providing detailed insights into storage usage patterns and file distributions.
 
-![Static Badge](https://img.shields.io/badge/Version-Prototype-%23e81919?style=flat&color=%23e81919)
+![Static Badge](https://img.shields.io/badge/Version-Alpha-%23e81919?style=flat&color=%23e81919)
 ![Static Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
-![Static Badge](https://img.shields.io/badge/Latest_Update-06%2F01%2F2025-%2318a5a3)
+![Static Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3)
 
----
+## Description
+
+This tool analyzes Windows fixed drives to provide detailed storage insights and help identify space usage patterns. It uses parallel processing for efficient analysis of large directory structures.
 
 ## Features
 
-- Drive space metrics (total, used, free)
-- Largest folders identification
-- File type distribution analysis
-- Largest files listing [Coming soon?]
-- Recently modified large files >100MB [Coming Soon]
-- Old unused large files >100MB [Coming Soon]
+- Drive space analysis (total, used, free space with percentages)
+- Largest folders identification (up to 3 levels deep)
+- File type distribution analysis with size thresholds
+- Largest files listing with metadata
+- Recent large files analysis (last 30 days)
+- Old large files identification (older than 6 months)
+- Parallel processing for improved performance
+- Non-blocking operation with graceful interruption handling
 
----
+## How To Use
 
-## How to Use
+1. Clone the repository
+```bash
+git clone https://github.com/CaptainMirage/Rusty-System-Analyser
+```
+2. Install Rust via [rustup](https://rustup.rs/) (Windows)
+3. Build and run:
+```bash
+cargo run --release
+```
 
-1. Clone the repository and navigate to the project directory.
-    ```bash
-     git clone https://github.com/CaptainMirage/Rusty-System-Analyser
-2. Ensure Rust is installed. You can install it via [rustup on windows](https://rustup.rs/).
-
-The program will display analysis results for all available drives (probably).
-
----
+The program automatically analyzes all fixed drives, excluding USB and network drives.
 
 ## Technologies
 
-- **Rust**: Programming language.
-- **sysinfo**: For drive space and system information.
-- **walkdir**: For traversing directories.
-- **rayon**: For parallelized computations.
+- **Rust**: Core programming language
+- **rayon**: Parallel computation framework
+- **walkdir**: Directory traversal
+- **chrono**: Time and date handling
+- **serde**: Data serialization
+- **winapi**: Windows API integration
+- **ctrlc**: Signal handling
 
----
+## Thresholds
+
+- Minimum folder size: 0.1 GB
+- Minimum file type size: 0.01 GB
 
 ## License
 
 yes
 
----
-
 ## Author Info
 
-For any inquiries, feel free to reach out or contribute to the project!
+For inquiries or contributions, feel free to reach out!
