@@ -20,7 +20,7 @@ use winapi::um::{
     winbase::DRIVE_FIXED,
 };
 
-// Constants
+// Size thresholds chosen to balance detail vs noise in reports
 const GB_TO_BYTES: f64 = 1_073_741_824.0;
 const MB_TO_BYTES: f64 = 1_048_576.0;
 const MIN_FOLDER_SIZE_GB: f64 = 0.1;
@@ -47,6 +47,7 @@ struct FileInfo {
     full_path: String,
     size_mb: f64,
     last_modified: String,
+    // Not all filesystems track access times
     last_accessed: Option<String>,
 }
 
@@ -58,6 +59,7 @@ struct FileTypeStats {
 
 pub struct StorageAnalyzer {
     drives: Vec<String>,
+    // Cache to avoid rescanning directories multiple times
     file_cache: HashMap<String, Vec<FileInfo>>,
 }
 
@@ -70,6 +72,8 @@ impl StorageAnalyzer {
         }
     }
 
+    // Windows-specific implementation to list fixed drives
+    // Filters for physical drives only, skips USB/network drives
     #[cfg(target_os = "windows")]
     fn list_drives() -> Vec<String> {
         let mut buffer = [0u16; 256];
@@ -91,17 +95,20 @@ impl StorageAnalyzer {
             .collect()
     }
 
+    // Placeholder for non-Windows platforms
     #[cfg(not(target_os = "windows"))]
     fn list_drives() -> Vec<String> {
         Vec::new()
     }
 
+    // Uses Windows API to get drive space information
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
         use winapi::um::winnt::ULARGE_INTEGER;
         let mut free_bytes_available: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
         let mut total_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
         let mut total_free_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
 
+        // Convert drive path to wide string for Windows API
         let wide_drive: Vec<u16> = OsStr::new(drive).encode_wide().chain(Some(0)).collect();
 
         let success = unsafe {
@@ -129,6 +136,7 @@ impl StorageAnalyzer {
         })
     }
 
+    // Uses parallel processing for better performance on large directories
     fn collect_and_cache_files(&mut self, drive: &str) -> io::Result<()> {
         if self.file_cache.contains_key(drive) {
             return Ok(());
@@ -136,7 +144,7 @@ impl StorageAnalyzer {
 
         let files: Vec<FileInfo> = WalkDir::new(drive)
             .into_iter()
-            .par_bridge()
+            .par_bridge() // Enable parallel processing
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
             .filter_map(|entry| {
@@ -223,6 +231,7 @@ impl StorageAnalyzer {
         }
     }
 
+    // Helper function to convert system time to formatted string
     fn system_time_to_string(system_time: SystemTime) -> String {
         let datetime: DateTime<Utc> = system_time
             .duration_since(UNIX_EPOCH)
@@ -231,6 +240,7 @@ impl StorageAnalyzer {
         datetime.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
+    // Main analysis function that calls all the other functions below
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         println!("\n====== STORAGE DISTRIBUTION ANALYSIS ======");
         println!("Date: {}", Utc::now().format(DATE_FORMAT));
@@ -264,6 +274,8 @@ impl StorageAnalyzer {
         }
     }
 
+    // Analyzes and returns largest folders up to 3 levels deep
+    // Excludes hidden folders (those starting with '.')
     fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
         println!("\nLargest Folders (Top 10):");
         let largest_folders = self.get_largest_folders(drive)?;
@@ -348,6 +360,7 @@ impl StorageAnalyzer {
         Ok(())
     }
 
+    // Gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         // First, ensure files are cached
         self.collect_and_cache_files(drive)?;
@@ -372,6 +385,7 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
+    // Gets old large files (older than 6 months)
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         // First, ensure files are cached
         self.collect_and_cache_files(drive)?;
@@ -396,6 +410,7 @@ impl StorageAnalyzer {
     }
 }
 
+// main function to call it all
 fn main() -> io::Result<()> {
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
@@ -407,7 +422,7 @@ fn main() -> io::Result<()> {
 
     let mut analyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives.clone() {
-        if !running.load(Ordering::SeqCst) {
+        if !running.load(Ordering::SeqCst) {    // Ctrl + C (user interruption) shutdown handling
             println!("Exiting gracefully...");
             break;
         }
