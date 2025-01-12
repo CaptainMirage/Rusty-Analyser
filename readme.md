@@ -1,4 +1,4 @@
-# Rusty System Analyser
+# Rusty Analyser
 
 A Rust program that performs comprehensive drive analysis, providing detailed insights into storage usage patterns and file distributions.
 
