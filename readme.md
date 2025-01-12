@@ -23,6 +23,11 @@ This tool analyzes Windows fixed drives to provide detailed storage insights and
 
 ## How To Use
 
+### Download the built project
+1. download the zip file from [releases](https://github.com/CaptainMirage/Rusty-Analyser/releases) page
+2. unzip and run the `.exe` file
+
+### Build from Source
 1. Clone the repository
 ```bash
 git clone https://github.com/CaptainMirage/Rusty-Analyser
