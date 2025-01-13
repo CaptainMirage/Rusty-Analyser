@@ -449,7 +449,7 @@ fn main() -> io::Result<()> {
         println!("if you are a normal user, consider using cargo run --release");
     }
     #[cfg(not(debug_assertions))]
-    { // release check (kinda sucks but it works stfu)
+    { // release check (kinda sucks but it works)
         println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
     }
     
