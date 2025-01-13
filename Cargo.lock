@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Rusty-Analyser"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 dependencies = [
  "chrono",
  "ctrlc",

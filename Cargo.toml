@@ -1,6 +1,6 @@
 [package]
 name = "Rusty-Analyser"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 edition = "2024"
 
 [dependencies]
@@ -10,6 +10,9 @@ walkdir = "2.3"
 ctrlc = "3.4.5"
 chrono = "0.4"
 rayon = "1.5"
+
+[features]
+DEBUG_MODE = []
 
 [profile.dev]
 opt-level = 0
