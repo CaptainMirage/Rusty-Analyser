@@ -18,10 +18,8 @@ This tool analyzes Windows fixed drives to provide detailed storage insights and
 - Largest folders identification (up to 3 levels deep)
 - File type distribution analysis with size thresholds
 - Largest files listing with metadata
-- Recent large files analysis (last 30 days)
-- Old large files identification (older than 6 months)
-- Parallel processing for improved performance
-- Non-blocking operation with graceful interruption handling
+- Recent large files analysis (last 30 days) [bug fix]
+- Old large files identification (older than 6 months) [bug fix]
 
 ## How To Use
 
