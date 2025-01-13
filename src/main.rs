@@ -250,8 +250,8 @@ impl StorageAnalyzer {
         self.print_largest_folders(drive)?;
         self.print_file_type_distribution(drive)?;
         self.print_largest_files(drive)?;
-        self.get_recent_large_files(drive)?;
-        self.get_old_large_files(drive)?;
+        self.print_recent_large_files(drive)?;
+        self.print_old_large_files(drive)?;
 
         Ok(())
     }
@@ -385,6 +385,21 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
+    fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
+        println!("\nRecent Large Files (<30 days old, Top 10):");
+        let files = self.get_recent_large_files(drive)?;
+        for file in files.iter().take(10) {
+            println!("Path: {}", file.full_path);
+            println!("Size (MB): {:.2}", file.size_mb);
+            println!("Last Modified: {}", file.last_modified);
+            if let Some(last_accessed) = &file.last_accessed {
+                println!("Last Accessed: {}", last_accessed);
+            }
+            println!("---");
+        }
+        Ok(())
+    }
+    
     // TODO - fix this shit also
     // Gets old large files (older than 6 months)
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
@@ -409,17 +424,35 @@ impl StorageAnalyzer {
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
     }
+
+    fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
+        println!("\nOld Large Files (>6 months old, Top 10):");
+        let files = self.get_old_large_files(drive)?;
+        for file in files.iter().take(10) {
+            println!("Path: {}", file.full_path);
+            println!("Size (MB): {:.2}", file.size_mb);
+            println!("Last Modified: {}", file.last_modified);
+            if let Some(last_accessed) = &file.last_accessed {
+                println!("Last Accessed: {}", last_accessed);
+            }
+            println!("---");
+        }
+        Ok(())
+    }
 }
 
 // main function to call it all
 fn main() -> io::Result<()> {
-    if cfg!(debug_assertions) {     // development only
+    #[cfg(debug_assertions)] 
+    { // development check
         println!("DEV PROFILE : Running in debug mode!");
         println!("if you are a normal user, consider using cargo run --release");
-    } else {
+    }
+    #[cfg(not(debug_assertions))]
+    { // release check (kinda sucks but it works stfu)
         println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
     }
-
+    
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
