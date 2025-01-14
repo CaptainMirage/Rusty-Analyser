@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc, NaiveDateTime};
 use rayon::prelude::*;
 use serde::Serialize;
 use std::{
@@ -359,25 +359,22 @@ impl StorageAnalyzer {
         Ok(())
     }
     
-    // TODO - fix this shit
+    // NOTE - fixed this shit
     // Gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        // First, ensure files are cached
         self.collect_and_cache_files(drive)?;
 
-        // Get the cached files
         let mut files = if let Some(files) = self.file_cache.get(drive) {
             files.clone()
         } else {
             return Ok(Vec::new());
         };
 
-        let thirty_days_ago = Utc::now() - Duration::days(30);
+        let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
 
-        // Filter for recent files
         files.retain(|file| {
-            DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
-                .map(|dt| dt.with_timezone(&Utc) > thirty_days_ago)
+            NaiveDateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
+                .map(|dt| dt > thirty_days_ago)
                 .unwrap_or(false)
         });
 
@@ -400,24 +397,22 @@ impl StorageAnalyzer {
         Ok(())
     }
     
-    // TODO - fix this shit also
+    // NOTE - fixed this shit also
     // Gets old large files (older than 6 months)
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        // First, ensure files are cached
         self.collect_and_cache_files(drive)?;
 
-        // Get the cached files
         let mut files = if let Some(files) = self.file_cache.get(drive) {
             files.clone()
         } else {
             return Ok(Vec::new());
         };
 
-        let six_months_ago = Utc::now() - Duration::days(180);
+        let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
 
         files.retain(|file| {
-            DateTime::parse_from_str(&file.last_modified, "%Y-%m-%d %H:%M:%S")
-                .map(|dt| dt.with_timezone(&Utc) < six_months_ago)
+            NaiveDateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
+                .map(|dt| dt < six_months_ago)
                 .unwrap_or(false)
         });
 
@@ -446,6 +441,7 @@ impl StorageAnalyzer {
 fn debug_test() -> io::Result<()> { // specific function calling
     let mut analyzer = StorageAnalyzer::new();
     analyzer.print_recent_large_files("C:\\")?;
+    analyzer.print_old_large_files("C:\\")?;
     // analyzer.print_largest_folders("C:\\")?;
     Ok(())
 }
@@ -463,7 +459,7 @@ fn main() -> io::Result<()> {
     }
     
     #[cfg(feature = "DEBUG_MODE")]
-    {   // for testing separate functions
+    {   // for testing separate functions "cargo run --features DEBUG_MODE"
         println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
@@ -483,6 +479,27 @@ fn main() -> io::Result<()> {
             break;
         }
         analyzer.analyze_drive(drive)?;
+    }
+    use console::Term;
+    let term = Term::stdout();
+
+    println!("\nPress any key to exit...");
+    term.read_char()?;
+    
+    // exit loop
+    loop {
+        println!("Are you sure you want to exit? (y/n)");
+        match term.read_char()? {
+            'y' | 'Y' => {
+                break;
+            }
+            'n' | 'N' => {
+                println!("\nPress any key to exit...");
+                term.read_char()?;
+                continue;
+            }
+            _ => continue
+        }
     }
 
     Ok(())
