@@ -464,7 +464,7 @@ fn main() -> io::Result<()> {
     
     #[cfg(feature = "DEBUG_MODE")]
     {   // for testing separate functions
-        println!("FUNCTION TEST : function test is running!");
+        println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
     
