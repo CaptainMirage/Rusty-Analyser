@@ -241,10 +241,10 @@ impl StorageAnalyzer {
 
     // Main analysis function that calls all the other functions below
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n====== STORAGE DISTRIBUTION ANALYSIS ======");
+        println!("\n======[ STORAGE DISTRIBUTION ANALYSIS ]======");
         println!("Date: {}", Utc::now().format(DATE_FORMAT));
         println!("Drive: {}", drive);
-        println!("========================================\n");
+        println!("============================================\n");
 
         self.print_drive_analysis(drive)?;
         self.print_largest_folders(drive)?;
@@ -441,6 +441,15 @@ impl StorageAnalyzer {
     }
 }
 
+// no touchy, only looky
+#[cfg(feature = "DEBUG_MODE")]
+fn debug_test() -> io::Result<()> { // specific function calling
+    let mut analyzer = StorageAnalyzer::new();
+    analyzer.print_recent_large_files("C:\\")?;
+    // analyzer.print_largest_folders("C:\\")?;
+    Ok(())
+}
+
 // main function to call it all
 fn main() -> io::Result<()> {
     #[cfg(debug_assertions)] 
@@ -451,6 +460,12 @@ fn main() -> io::Result<()> {
     #[cfg(not(debug_assertions))]
     { // release check (kinda sucks but it works)
         println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
+    }
+    
+    #[cfg(feature = "DEBUG_MODE")]
+    {   // for testing separate functions
+        println!("FUNCTION TEST : function test is running!");
+        return debug_test();
     }
     
     let running = Arc::new(AtomicBool::new(true));
