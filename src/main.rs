@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, TimeZone, Utc, NaiveDateTime};
+use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
 use rayon::prelude::*;
 use serde::Serialize;
 use std::{
@@ -6,10 +6,10 @@ use std::{
     ffi::{OsStr, OsString},
     io::{self, Error},
     os::windows::ffi::{OsStrExt, OsStringExt},
-    path::{Path},
+    path::Path,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -85,11 +85,13 @@ impl StorageAnalyzer {
         buffer[..len as usize]
             .split(|&c| c == 0)
             .filter_map(|slice| {
-                (!slice.is_empty()).then(|| {
-                    let drive = OsString::from_wide(slice);
-                    let drive_type = unsafe { GetDriveTypeW(slice.as_ptr()) };
-                    (drive_type == DRIVE_FIXED).then(|| drive.to_string_lossy().into_owned())
-                }).flatten()
+                (!slice.is_empty())
+                    .then(|| {
+                        let drive = OsString::from_wide(slice);
+                        let drive_type = unsafe { GetDriveTypeW(slice.as_ptr()) };
+                        (drive_type == DRIVE_FIXED).then(|| drive.to_string_lossy().into_owned())
+                    })
+                    .flatten()
             })
             .collect()
     }
@@ -147,24 +149,24 @@ impl StorageAnalyzer {
             .filter_map(Result::ok)
             .filter(|e| e.file_type().is_file())
             .filter_map(|entry| {
-                entry.metadata().ok().map(|metadata| {
-                    let file_size = metadata.len() as f64 / MB_TO_BYTES;
-                    let last_modified = metadata
-                        .modified()
-                        .ok()
-                        .map(Self::system_time_to_string);
-                    let last_accessed = metadata
-                        .accessed()
-                        .ok()
-                        .map(Self::system_time_to_string);
+                entry
+                    .metadata()
+                    .ok()
+                    .map(|metadata| {
+                        let file_size = metadata.len() as f64 / MB_TO_BYTES;
+                        let last_modified =
+                            metadata.modified().ok().map(Self::system_time_to_string);
+                        let last_accessed =
+                            metadata.accessed().ok().map(Self::system_time_to_string);
 
-                    last_modified.map(|modified| FileInfo {
-                        full_path: entry.path().to_string_lossy().to_string(),
-                        size_mb: file_size,
-                        last_modified: modified,
-                        last_accessed,
+                        last_modified.map(|modified| FileInfo {
+                            full_path: entry.path().to_string_lossy().to_string(),
+                            size_mb: file_size,
+                            last_modified: modified,
+                            last_accessed,
+                        })
                     })
-                }).flatten()
+                    .flatten()
             })
             .collect();
 
@@ -175,38 +177,40 @@ impl StorageAnalyzer {
     fn get_file_type_distribution(&mut self, drive: &str) -> io::Result<Vec<(String, f64, usize)>> {
         self.collect_and_cache_files(drive)?;
 
-        let file_types: HashMap<String, FileTypeStats> = if let Some(files) = self.file_cache.get(drive) {
-            files.par_iter()
-                .fold(
-                    || HashMap::new(),
-                    |mut acc, file_info| {
-                        let ext = Path::new(&file_info.full_path)
-                            .extension()
-                            .map(|e| e.to_string_lossy().to_lowercase())
-                            .unwrap_or_else(|| "(No Extension)".to_string());
+        let file_types: HashMap<String, FileTypeStats> =
+            if let Some(files) = self.file_cache.get(drive) {
+                files
+                    .par_iter()
+                    .fold(
+                        || HashMap::new(),
+                        |mut acc, file_info| {
+                            let ext = Path::new(&file_info.full_path)
+                                .extension()
+                                .map(|e| e.to_string_lossy().to_lowercase())
+                                .unwrap_or_else(|| "(No Extension)".to_string());
 
-                        let size = (file_info.size_mb * MB_TO_BYTES) as u64;
+                            let size = (file_info.size_mb * MB_TO_BYTES) as u64;
 
-                        let stats: &mut FileTypeStats = acc.entry(ext).or_default();
-                        stats.total_size += size;
-                        stats.count += 1;
-                        acc
-                    },
-                )
-                .reduce(
-                    || HashMap::new(),
-                    |mut acc1, acc2| {
-                        for (ext, stats2) in acc2 {
-                            let stats1 = acc1.entry(ext).or_default();
-                            stats1.total_size += stats2.total_size;
-                            stats1.count += stats2.count;
-                        }
-                        acc1
-                    },
-                )
-        } else {
-            HashMap::new()
-        };
+                            let stats: &mut FileTypeStats = acc.entry(ext).or_default();
+                            stats.total_size += size;
+                            stats.count += 1;
+                            acc
+                        },
+                    )
+                    .reduce(
+                        || HashMap::new(),
+                        |mut acc1, acc2| {
+                            for (ext, stats2) in acc2 {
+                                let stats1 = acc1.entry(ext).or_default();
+                                stats1.total_size += stats2.total_size;
+                                stats1.count += stats2.count;
+                            }
+                            acc1
+                        },
+                    )
+            } else {
+                HashMap::new()
+            };
 
         let mut distribution: Vec<_> = file_types
             .into_iter()
@@ -358,7 +362,7 @@ impl StorageAnalyzer {
         }
         Ok(())
     }
-    
+
     // NOTE - fixed this shit
     // Gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
@@ -396,7 +400,7 @@ impl StorageAnalyzer {
         }
         Ok(())
     }
-    
+
     // NOTE - fixed this shit also
     // Gets old large files (older than 6 months)
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
@@ -438,7 +442,8 @@ impl StorageAnalyzer {
 
 // no touchy, only looky
 #[cfg(feature = "DEBUG_MODE")]
-fn debug_test() -> io::Result<()> { // specific function calling
+fn debug_test() -> io::Result<()> {
+    // specific function calling
     let mut analyzer = StorageAnalyzer::new();
     analyzer.print_recent_large_files("C:\\")?;
     analyzer.print_old_large_files("C:\\")?;
@@ -450,31 +455,31 @@ fn debug_test() -> io::Result<()> { // specific function calling
 fn main() -> io::Result<()> {
     // development check
     #[cfg(debug_assertions)]
-    { 
+    {
         println!("DEV PROFILE : Running in debug mode!");
         println!("if you are a normal user, consider using cargo run --release");
     }
-    
+
     // release check (kinda sucks but it works)
-    #[cfg(not(debug_assertions))] 
-    { 
+    #[cfg(not(debug_assertions))]
+    {
         println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
     }
 
     // for testing separate functions "cargo run --features DEBUG_MODE"
     #[cfg(feature = "DEBUG_MODE")]
-    {   
+    {
         println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
-    
+
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
     })
-        .expect("Error setting Ctrl-C handler");
+    .expect("Error setting Ctrl-C handler");
 
     let mut analyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives.clone() {
@@ -490,7 +495,7 @@ fn main() -> io::Result<()> {
 
     println!("\nPress any key to exit...");
     term.read_char()?;
-    
+
     // exit loop
     loop {
         println!("Are you sure you want to exit? (y/n)");
@@ -503,7 +508,7 @@ fn main() -> io::Result<()> {
                 term.read_char()?;
                 continue;
             }
-            _ => continue
+            _ => continue,
         }
     }
 
