@@ -448,18 +448,22 @@ fn debug_test() -> io::Result<()> { // specific function calling
 
 // main function to call it all
 fn main() -> io::Result<()> {
-    #[cfg(debug_assertions)] 
-    { // development check
+    // development check
+    #[cfg(debug_assertions)]
+    { 
         println!("DEV PROFILE : Running in debug mode!");
         println!("if you are a normal user, consider using cargo run --release");
     }
-    #[cfg(not(debug_assertions))]
-    { // release check (kinda sucks but it works)
+    
+    // release check (kinda sucks but it works)
+    #[cfg(not(debug_assertions))] 
+    { 
         println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
     }
-    
+
+    // for testing separate functions "cargo run --features DEBUG_MODE"
     #[cfg(feature = "DEBUG_MODE")]
-    {   // for testing separate functions "cargo run --features DEBUG_MODE"
+    {   
         println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
@@ -474,7 +478,8 @@ fn main() -> io::Result<()> {
 
     let mut analyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives.clone() {
-        if !running.load(Ordering::SeqCst) {    // Ctrl + C (user interruption) shutdown handling
+        if !running.load(Ordering::SeqCst) {
+            // Ctrl + C (user interruption) shutdown handling
             println!("Exiting gracefully...");
             break;
         }
