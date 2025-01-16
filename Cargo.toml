@@ -13,6 +13,7 @@ rayon = "1.5"
 console = "0.15.10"
 
 [features]
+# DEBUG_MODE off by default
 DEBUG_MODE = []
 
 [profile.dev]
