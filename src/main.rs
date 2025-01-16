@@ -245,10 +245,10 @@ impl StorageAnalyzer {
 
     // Main analysis function that calls all the other functions below
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n┌──┤ STORAGE DISTRIBUTION ANALYSIS ├────");
-        println!("├ Date: {}", Utc::now().format(DATE_FORMAT));
-        println!("├ Drive: {}", drive);
-        println!("└────────\n");
+        println!("\n┌───┤ STORAGE DISTRIBUTION ANALYSIS ├─────");
+        println!("│ Date: {}", Utc::now().format(DATE_FORMAT));
+        println!("│ Drive: {}", drive);
+        println!("└──────────\n");
 
         self.print_drive_analysis(drive)?;
         self.print_largest_folders(drive)?;
@@ -263,12 +263,12 @@ impl StorageAnalyzer {
     fn print_drive_analysis(&self, drive: &str) -> io::Result<()> {
         match self.get_drive_space(drive) {
             Ok(analysis) => {
-                println!("┌┤ Drive Space Overview ├──");
-                println!("├> Total Size (GB): {:.2}", analysis.total_size);
-                println!("├> Used Space (GB): {:.2}", analysis.used_space);
-                println!("├> Free Space (GB): {:.2}", analysis.free_space);
-                println!("├> Free Space (%): {:.2}", analysis.free_space_percent);
-                println!("└──────────\n");
+                println!("┌───┤ Drive Space Overview ├─────");
+                println!("│ Total Size (GB): {:.2}", analysis.total_size);
+                println!("│ Used Space (GB): {:.2}", analysis.used_space);
+                println!("│ Free Space (GB): {:.2}", analysis.free_space);
+                println!("│ Free Space (%): {:.2}", analysis.free_space_percent);
+                println!("└────────────\n");
                 Ok(())
             }
             Err(e) => {
@@ -281,10 +281,10 @@ impl StorageAnalyzer {
     // Analyzes and returns largest folders up to 3 levels deep
     // Excludes hidden folders (those starting with '.')
     fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
-        println!("\n┌┤ Largest Folders (Top 10) ├─────");
+        println!("\n───┤ Largest Folders (Top 10) ├─────\n");
         let largest_folders = self.get_largest_folders(drive)?;
         for folder in largest_folders.iter().take(10) {
-            println!("├─ Folder: {}", folder.folder);
+            println!("┌─── Folder: {}", folder.folder);
             println!("│ Size (GB): {:.2}", folder.size_gb);
             println!("│ File Count: {}", folder.file_count);
             println!("└──────────");
@@ -293,13 +293,11 @@ impl StorageAnalyzer {
     }
 
     fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n┌┤ File Type Distribution (Top 10) ├────");
+        println!("\n───┤ File Type Distribution (Top 10) ├─────\n");
         let distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in distribution.iter().take(10) {
             println!(
-                "┌┤ Extension: {} \n
-                ├ Count: {} \n
-                └ Size (GB): {:.2}",
+                "┌── Extension: {} \n│ Count: {} \n│ Size (GB): {:.2} \n└─────────",
                 ext, count, size
             );
         }
@@ -352,16 +350,16 @@ impl StorageAnalyzer {
     }
 
     fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n┌┤ Largest Files (Top 10) ├───");
+        println!("\n───┤ Largest Files (Top 10) ├─────\n");
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
-            println!("├ Path: {}", file.full_path);
-            println!("├ Size (MB): {:.2}", file.size_mb);
-            println!("├ Last Modified: {}", file.last_modified);
+            println!("┌──── Path: {}", file.full_path);
+            println!("│ Size (MB): {:.2}", file.size_mb);
+            println!("│ Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
-                println!("├ Last Accessed: {}", last_accessed);
+                println!("│ Last Accessed: {}", last_accessed);
             }
-            println!("└─────");
+            println!("└───────────");
         }
         Ok(())
     }
@@ -390,14 +388,14 @@ impl StorageAnalyzer {
     }
 
     fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n┌┤ Recent Large Files (<30 days old, Top 10) ├───");
+        println!("\n───┤ Recent Large Files (<30 days old, Top 10) ├─────\n");
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("├ Path: {}", file.full_path);
-            println!("├ Size (MB): {:.2}", file.size_mb);
-            println!("├ Last Modified: {}", file.last_modified);
+            println!("┌─── Path: {}", file.full_path);
+            println!("│ Size (MB): {:.2}", file.size_mb);
+            println!("│ Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
-                println!("├ Last Accessed: {}", last_accessed);
+                println!("│ Last Accessed: {}", last_accessed);
             }
             println!("└─────");
         }
@@ -428,14 +426,14 @@ impl StorageAnalyzer {
     }
 
     fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n┌┤ Old Large Files (>6 months old, Top 10) ├───");
+        println!("\n───┤ Old Large Files (>6 months old, Top 10) ├─────\n");
         let files = self.get_old_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("├ Path: {}", file.full_path);
-            println!("├ Size (MB): {:.2}", file.size_mb);
-            println!("├ Last Modified: {}", file.last_modified);
+            println!("┌── Path: {}", file.full_path);
+            println!("│ Size (MB): {:.2}", file.size_mb);
+            println!("│ Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
-                println!("├ Last Accessed: {}", last_accessed);
+                println!("│ Last Accessed: {}", last_accessed);
             }
             println!("└─────");
         }
