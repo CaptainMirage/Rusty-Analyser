@@ -464,7 +464,10 @@ fn main() -> io::Result<()> {
     // release check (kinda sucks but it works)
     #[cfg(not(debug_assertions))]
     {
-        println!("RELEASE PROFILE : Running in release mode! Optimizations enabled.");
+        println!("┌──────────────────────────");
+        println!("│ RELEASE PROFILE : Running in release mode!");
+        println!("│ Optimizations enabled, debug off, overflow checks off");
+        println!("└────────────────────");
     }
 
     // for testing separate functions "cargo run --features DEBUG_MODE"
