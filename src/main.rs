@@ -489,7 +489,7 @@ fn main() -> io::Result<()> {
     for drive in &analyzer.drives.clone() {
         if !running.load(Ordering::SeqCst) {
             // Ctrl + C (user interruption) shutdown handling
-            println!("Exiting gracefully...");
+            println!("Exiting 'ctrl + C' gracefully...");
             break;
         }
         analyzer.analyze_drive(drive)?;
