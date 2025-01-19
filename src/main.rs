@@ -502,7 +502,7 @@ fn main() -> io::Result<()> {
 
     // exit loop
     loop {
-        println!("Are you sure you want to exit? (y/n)");
+        println!("Are you sure you want to exit? (Y/N)");
         match term.read_char()? {
             'y' | 'Y' => {
                 break;
