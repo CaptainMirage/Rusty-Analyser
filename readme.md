@@ -73,4 +73,4 @@ This project uses/was inspired by [Rusty Analyser](https://github.com/CaptainMir
 
 For inquiries or contributions, feel free to reach out!
 
-(my info is in my profile)
+(my info is in my profile, cant be bothered to add it here)
