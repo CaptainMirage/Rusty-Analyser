@@ -57,7 +57,7 @@ cargo run --release
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Attribution Request
+### Attribution?
 While the MIT License doesn't require it, if you use this tool or its code, a credit would be appreciated! You can provide attribution in any of these ways:
 
 - 🔗 Link back to this repository in your project
