@@ -245,10 +245,9 @@ impl StorageAnalyzer {
 
     // Main analysis function that calls all the other functions below
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n┌───┤ STORAGE DISTRIBUTION ANALYSIS ├─────");
-        println!("│ Date: {}", Utc::now().format(DATE_FORMAT));
-        println!("│ Drive: {}", drive);
-        println!("└──────────\n");
+        println!("\n=== Storage Distribution Analysis ===");
+        println!("Date: {}", Utc::now().format(DATE_FORMAT));
+        println!("Drive: {}", drive);
 
         self.print_drive_analysis(drive)?;
         self.print_largest_folders(drive)?;
@@ -259,16 +258,14 @@ impl StorageAnalyzer {
 
         Ok(())
     }
-
+    
     fn print_drive_analysis(&self, drive: &str) -> io::Result<()> {
         match self.get_drive_space(drive) {
             Ok(analysis) => {
-                println!("┌───┤ Drive Space Overview ├─────");
-                println!("│ Total Size (GB): {:.2}", analysis.total_size);
-                println!("│ Used Space (GB): {:.2}", analysis.used_space);
-                println!("│ Free Space (GB): {:.2}", analysis.free_space);
-                println!("│ Free Space (%): {:.2}", analysis.free_space_percent);
-                println!("└────────────\n");
+                println!("--- Drive Space Overview ---");
+                println!("Total Size: {:.2} GB", analysis.total_size);
+                println!("Used Space: {:.2} GB", analysis.used_space);
+                println!("Free Space: {:.2} GB ({:.}%)", analysis.free_space, analysis.free_space_percent);
                 Ok(())
             }
             Err(e) => {
@@ -281,13 +278,12 @@ impl StorageAnalyzer {
     // Analyzes and returns largest folders up to 3 levels deep
     // Excludes hidden folders (those starting with '.')
     fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
-        println!("\n───┤ Largest Folders (Top 10) ├─────\n");
+        println!("\n--- Largest Folders (Top 10) ---\n");
         let largest_folders = self.get_largest_folders(drive)?;
         for folder in largest_folders.iter().take(10) {
-            println!("┌─── Folder: {}", folder.folder);
-            println!("│ Size (GB): {:.2}", folder.size_gb);
-            println!("│ File Count: {}", folder.file_count);
-            println!("└──────────");
+            println!("[1] {}", folder.folder);
+            println!("Size: {:.2} GB", folder.size_gb);
+            println!("Files: {}", folder.file_count);
         }
         Ok(())
     }
