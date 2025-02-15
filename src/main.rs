@@ -281,19 +281,20 @@ impl StorageAnalyzer {
         println!("\n--- Largest Folders (Top 10) ---\n");
         let largest_folders = self.get_largest_folders(drive)?;
         for folder in largest_folders.iter().take(10) {
-            println!("[1] {}", folder.folder);
-            println!("Size: {:.2} GB", folder.size_gb);
-            println!("Files: {}", folder.file_count);
+            let cnt: i8 = 0;
+            println!("[{}] {}", cnt+1, folder.folder);
+            println!("  Size: {:.2} GB", folder.size_gb);
+            println!("  Files: {}", folder.file_count);
         }
         Ok(())
     }
 
     fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n───┤ File Type Distribution (Top 10) ├─────\n");
+        println!("\n--- File Type Distribution (Top 10) ---\n");
         let distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in distribution.iter().take(10) {
             println!(
-                "┌── Extension: {} \n│ Count: {} \n│ Size (GB): {:.2} \n└─────────",
+                "[>] {} \n  Count: {} \n  Size (GB): {:.2} \n",
                 ext, count, size
             );
         }
