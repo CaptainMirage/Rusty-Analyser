@@ -351,7 +351,7 @@ impl StorageAnalyzer {
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
             println!("[*] Path: {}", file.full_path);
-            println!("    Size (MB): {:.2}", file.size_mb);
+            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_gb);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
                 println!("    Last Accessed: {}", last_accessed);
@@ -388,7 +388,7 @@ impl StorageAnalyzer {
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
             println!("[*] Path: {}", file.full_path);
-            println!("    Size (MB): {:.2}", file.size_mb);
+            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_gb);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
                 println!("    Last Accessed: {}", last_accessed);
@@ -421,16 +421,15 @@ impl StorageAnalyzer {
     }
 
     fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n───┤ Old Large Files (>6 months old, Top 10) ├─────\n");
+        println!("\n--- Old Large Files (>6 months old) ---\n");
         let files = self.get_old_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("┌── Path: {}", file.full_path);
-            println!("│ Size (MB): {:.2}", file.size_mb);
-            println!("│ Last Modified: {}", file.last_modified);
+            println!("[*] Path: {}", file.full_path);
+            println!("    Size: {:.2} MB / {:.2}", file.size_mb, file.size_gb);
+            println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
-                println!("│ Last Accessed: {}", last_accessed);
+                println!("    Last Accessed: {}", last_accessed);
             }
-            println!("└─────");
         }
         Ok(())
     }
@@ -452,6 +451,7 @@ fn main() -> io::Result<()> {
     // development check
     #[cfg(debug_assertions)]
     {
+        println!("--- WARNING ---");
         println!("DEV PROFILE : Running in debug mode!");
         println!("if you are a normal user, consider using cargo run --release");
     }
@@ -459,15 +459,15 @@ fn main() -> io::Result<()> {
     // release check (kinda sucks but it works)
     #[cfg(not(debug_assertions))]
     {
-        println!("┌──────────────────────────");
-        println!("│ RELEASE PROFILE : Running in release mode!");
-        println!("│ Optimizations enabled, debug off, overflow checks off");
-        println!("└────────────────────");
+        println!("-- INFO --");
+        println!("  RELEASE PROFILE : Running in release mode!");
+        println!("  Optimizations enabled, debug off, overflow checks off");
     }
 
     // for testing separate functions "cargo run --features DEBUG_MODE"
     #[cfg(feature = "DEBUG_MODE")]
     {
+        println!("--- WARNING ---");
         println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
