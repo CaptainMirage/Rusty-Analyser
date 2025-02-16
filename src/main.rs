@@ -351,7 +351,7 @@ impl StorageAnalyzer {
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
             println!("[*] Path: {}", file.full_path);
-            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_gb);
+            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
                 println!("    Last Accessed: {}", last_accessed);
@@ -388,7 +388,7 @@ impl StorageAnalyzer {
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
             println!("[*] Path: {}", file.full_path);
-            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_gb);
+            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
                 println!("    Last Accessed: {}", last_accessed);
@@ -425,7 +425,7 @@ impl StorageAnalyzer {
         let files = self.get_old_large_files(drive)?;
         for file in files.iter().take(10) {
             println!("[*] Path: {}", file.full_path);
-            println!("    Size: {:.2} MB / {:.2}", file.size_mb, file.size_gb);
+            println!("    Size: {:.2} MB / {:.2}", file.size_mb, file.size_mb/1000.0);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
                 println!("    Last Accessed: {}", last_accessed);
