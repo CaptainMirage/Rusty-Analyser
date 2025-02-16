@@ -294,7 +294,7 @@ impl StorageAnalyzer {
         let distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in distribution.iter().take(10) {
             println!(
-                "[>] {} \n  Count: {} \n  Size (GB): {:.2} \n",
+                "[>] {} \n  Count: {} \n  Size: {:.2} GB \n",
                 ext, count, size
             );
         }
@@ -347,16 +347,15 @@ impl StorageAnalyzer {
     }
 
     fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n───┤ Largest Files (Top 10) ├─────\n");
+        println!("\n--- Largest Files ---\n");
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
-            println!("┌──── Path: {}", file.full_path);
-            println!("│ Size (MB): {:.2}", file.size_mb);
-            println!("│ Last Modified: {}", file.last_modified);
+            println!("[*] Path: {}", file.full_path);
+            println!("    Size (MB): {:.2}", file.size_mb);
+            println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
-                println!("│ Last Accessed: {}", last_accessed);
+                println!("    Last Accessed: {}", last_accessed);
             }
-            println!("└───────────");
         }
         Ok(())
     }
@@ -385,16 +384,15 @@ impl StorageAnalyzer {
     }
 
     fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n───┤ Recent Large Files (<30 days old, Top 10) ├─────\n");
+        println!("\n--- Recent Large Files ---\n");
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("┌─── Path: {}", file.full_path);
-            println!("│ Size (MB): {:.2}", file.size_mb);
-            println!("│ Last Modified: {}", file.last_modified);
+            println!("[*] Path: {}", file.full_path);
+            println!("    Size (MB): {:.2}", file.size_mb);
+            println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
-                println!("│ Last Accessed: {}", last_accessed);
+                println!("    Last Accessed: {}", last_accessed);
             }
-            println!("└─────");
         }
         Ok(())
     }
