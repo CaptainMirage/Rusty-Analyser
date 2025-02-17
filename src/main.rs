@@ -262,10 +262,10 @@ impl StorageAnalyzer {
     fn print_drive_analysis(&self, drive: &str) -> io::Result<()> {
         match self.get_drive_space(drive) {
             Ok(analysis) => {
-                println!("--- Drive Space Overview ---");
+                println!("\n--- Drive Space Overview ---");
                 println!("Total Size: {:.2} GB", analysis.total_size);
                 println!("Used Space: {:.2} GB", analysis.used_space);
-                println!("Free Space: {:.2} GB ({:.}%)", analysis.free_space, analysis.free_space_percent);
+                println!("Free Space: {:.2} GB ({:.2}%)", analysis.free_space, analysis.free_space_percent);
                 Ok(())
             }
             Err(e) => {
@@ -278,11 +278,12 @@ impl StorageAnalyzer {
     // Analyzes and returns largest folders up to 3 levels deep
     // Excludes hidden folders (those starting with '.')
     fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
-        println!("\n--- Largest Folders (Top 10) ---\n");
+        println!("\n--- Largest Folders (Top 10) ---");
         let largest_folders = self.get_largest_folders(drive)?;
+        let mut cnt: i8 = 0;
         for folder in largest_folders.iter().take(10) {
-            let cnt: i8 = 0;
-            println!("[{}] {}", cnt+1, folder.folder);
+            cnt += 1;
+            println!("\n[{}] {}", cnt, folder.folder);
             println!("  Size: {:.2} GB", folder.size_gb);
             println!("  Files: {}", folder.file_count);
         }
@@ -290,11 +291,11 @@ impl StorageAnalyzer {
     }
 
     fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n--- File Type Distribution (Top 10) ---\n");
+        println!("\n--- File Type Distribution (Top 10) ---");
         let distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in distribution.iter().take(10) {
             println!(
-                "[>] {} \n  Count: {} \n  Size: {:.2} GB \n",
+                "\n[>] {} \n  Count: {} \n  Size: {:.2} GB",
                 ext, count, size
             );
         }
@@ -347,10 +348,10 @@ impl StorageAnalyzer {
     }
 
     fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n--- Largest Files ---\n");
+        println!("\n--- Largest Files ---");
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
-            println!("[*] Path: {}", file.full_path);
+            println!("\n[*] Path: {}", file.full_path);
             println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
@@ -384,10 +385,10 @@ impl StorageAnalyzer {
     }
 
     fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n--- Recent Large Files ---\n");
+        println!("\n--- Recent Large Files ---");
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("[*] Path: {}", file.full_path);
+            println!("\n[*] Path: {}", file.full_path);
             println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
@@ -421,10 +422,10 @@ impl StorageAnalyzer {
     }
 
     fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n--- Old Large Files (>6 months old) ---\n");
+        println!("\n--- Old Large Files (>6 months old) ---");
         let files = self.get_old_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("[*] Path: {}", file.full_path);
+            println!("\n[*] Path: {}", file.full_path);
             println!("    Size: {:.2} MB / {:.2}", file.size_mb, file.size_mb/1000.0);
             println!("    Last Modified: {}", file.last_modified);
             if let Some(last_accessed) = &file.last_accessed {
