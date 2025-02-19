@@ -7,10 +7,6 @@ use std::{
     io::{self, Error},
     os::windows::ffi::{OsStrExt, OsStringExt},
     path::Path,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
     time::{SystemTime, UNIX_EPOCH},
 };
 use walkdir::WalkDir;
@@ -472,22 +468,9 @@ fn main() -> io::Result<()> {
         println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
-
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
-
-    ctrlc::set_handler(move || {
-        r.store(false, Ordering::SeqCst);
-    })
-    .expect("Error setting Ctrl-C handler");
-
+    
     let mut analyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives.clone() {
-        if !running.load(Ordering::SeqCst) {
-            // Ctrl + C (user interruption) shutdown handling
-            println!("Exiting 'ctrl + C' gracefully...");
-            break;
-        }
         analyzer.analyze_drive(drive)?;
     }
     use console::Term;
@@ -495,22 +478,6 @@ fn main() -> io::Result<()> {
 
     println!("\nPress any key to exit...");
     term.read_char()?;
-
-    // exit loop
-    loop {
-        println!("Are you sure you want to exit? (Y/N)");
-        match term.read_char()? {
-            'y' | 'Y' => {
-                break;
-            }
-            'n' | 'N' => {
-                println!("\nPress any key to exit...");
-                term.read_char()?;
-                continue;
-            }
-            _ => continue,
-        }
-    }
-
+    
     Ok(())
 }
