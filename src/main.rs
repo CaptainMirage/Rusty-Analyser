@@ -14,6 +14,11 @@ use winapi::um::{
     fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
     winbase::DRIVE_FIXED,
 };
+use std::io::{Write};
+use std::process::{self, Command};
+use std::collections::HashSet;
+use std::env;
+use lazy_static::lazy_static;
 
 // Size thresholds chosen to balance detail vs noise in reports
 const GB_TO_BYTES: f64 = 1_073_741_824.0;
@@ -432,6 +437,58 @@ impl StorageAnalyzer {
     }
 }
 
+fn bash_like_shell() {
+    // Define the HashSet of commands
+    lazy_static! {
+        static ref BUILTIN_COMMANDS: HashSet<&'static str> = {
+            vec!["exit", "echo", "type", "pwd", "cd"]
+                .into_iter()
+                .collect()
+        };
+    }
+
+    print!("$ ");
+    io::stdout().flush().unwrap();
+
+    // Wait for user input
+    let stdin = io::stdin();
+    let mut input = String::new();
+    loop {
+        stdin.read_line(&mut input).unwrap();
+        let command: Vec<_> = input.trim().split_whitespace().collect();
+
+        if command.is_empty() {
+            input.clear();
+            print!("$ ");
+            io::stdout().flush().unwrap();
+            continue;
+        }
+
+        match command[..] {
+            ["exit", ..] => match command.get(1) {
+                Some(code) => process::exit(code.parse::<i32>().unwrap()),
+                None => process::exit(0),  // Default exit code if none provided
+            },
+            ["echo", ..] => match command.get(1..) {
+                Some(words) => println!("{}", words.join(" ")),
+                None => println!(),  // Just print newline if no arguments given
+            },
+            ["pwd"] => {
+                match env::current_dir() {
+                    Ok(path) => println!("{}", path.display()),
+                    Err(e) => println!("pwd: error getting current directory: {}", e),
+                }
+            },
+            _ => {
+                    println!("{}: not found", command[0]);
+            }
+        }
+        input.clear();
+        print!("$ ");
+        io::stdout().flush().unwrap();
+    }
+}
+
 // no touchy, only looky
 #[cfg(feature = "DEBUG_MODE")]
 fn debug_test() -> io::Result<()> {
@@ -469,7 +526,7 @@ fn main() -> io::Result<()> {
         return debug_test();
     }
     
-    let mut analyzer = StorageAnalyzer::new();
+    let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives.clone() {
         analyzer.analyze_drive(drive)?;
     }
