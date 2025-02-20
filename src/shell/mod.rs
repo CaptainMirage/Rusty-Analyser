@@ -1,4 +1,4 @@
 pub mod commands;
 
 #[allow(unused_imports)]
-pub use commands::Bash_Commands;
+pub use commands::bash_commands;

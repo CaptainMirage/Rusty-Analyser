@@ -6,7 +6,7 @@ use std::{
     process,
 };
 
-pub fn Bash_Commands() {
+pub fn bash_commands() {
     // Define the HashSet of commands
     lazy_static! {
         static ref BUILTIN_COMMANDS: HashSet<&'static str> = {
