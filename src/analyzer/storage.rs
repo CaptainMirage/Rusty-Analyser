@@ -1,5 +1,6 @@
 use super::{
     constants::*,
+    utils::*,
     types::* 
 };
 use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
@@ -116,9 +117,9 @@ impl StorageAnalyzer {
                     .map(|metadata| {
                         let file_size = metadata.len() as f64 / MB_TO_BYTES;
                         let last_modified =
-                            metadata.modified().ok().map(Self::system_time_to_string);
+                            metadata.modified().ok().map(system_time_to_string);
                         let last_accessed =
-                            metadata.accessed().ok().map(Self::system_time_to_string);
+                            metadata.accessed().ok().map(system_time_to_string);
 
                         last_modified.map(|modified| FileInfo {
                             full_path: entry.path().to_string_lossy().to_string(),
@@ -194,16 +195,7 @@ impl StorageAnalyzer {
             Ok(Vec::new())
         }
     }
-
-    // Helper function to convert system time to formatted string
-    fn system_time_to_string(system_time: SystemTime) -> String {
-        let datetime: DateTime<Utc> = system_time
-            .duration_since(UNIX_EPOCH)
-            .map(|duration| Utc.timestamp_opt(duration.as_secs() as i64, 0).unwrap())
-            .unwrap_or_else(|_| Utc::now());
-        datetime.format("%Y-%m-%d %H:%M:%S").to_string()
-    }
-
+    
     // Main analysis function that calls all the other functions below
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         println!("\n=== Storage Distribution Analysis ===");
