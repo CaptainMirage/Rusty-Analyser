@@ -45,6 +45,7 @@ pub fn bash_commands() {
         }
 
         match command[..] {
+            // some default commands
             ["exit", ..] => match command.get(1) {
                 Some(code) => process::exit(code.parse::<i32>().unwrap()),
                 None => process::exit(0),  // Default exit code if none provided
@@ -57,19 +58,38 @@ pub fn bash_commands() {
                 Ok(path) => println!("{}", path.display()),
                 Err(e) => println!("pwd: error getting current directory: {}", e),
             },
-            ["get_drive_space", ..] => match command.get(1) {
+            
+            // drive analysis commands
+            ["DriveSpace", ..] => match command.get(3) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass"),
+                None => println!("didnt put any inputs dumbass get_drive_space"),
             },
-            ["get_file_type_distribution", ..] => match command.get(1) {
+            ["FileTypeDist", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass"),
+                None => println!("didnt put any inputs dumbass get_file_type_distribution"),
             },
-            ["get_largest_files", ..] => match command.get(1) {
+            ["LargestFiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass"),
+                None => println!("didnt put any inputs dumbass LargestFiles"),
+            },
+            ["LargestFolder", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass LargestFolder"),
+            },
+            ["RecentLargeFiles", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass RecentLargeFiles"),
+            },
+            ["OldLargeFiles", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass OldLargeFiles"),
+            },
+            ["DriveAnalysis", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass DriveAnalysis"),
             },
 
+            
             _ => {
                 println!("{}: not found", command[0]);
             }
