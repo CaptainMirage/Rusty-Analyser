@@ -1,10 +1,5 @@
 mod analyzer;
 mod shell;
-
-use analyzer::{
-    StorageAnalyzer,
-    constants::*  // Import constants from the module
-};
 use console::Term;
 
 // Constants can stay here or move to analyzer/constants.rs if you prefer
@@ -38,11 +33,9 @@ fn main() -> std::io::Result<()> {
         println!("DEBUG MODE : Running in debug mode!");
         return debug_test();
     }
-
-    let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
-    for drive in &analyzer.drives.clone() {
-        analyzer.analyze_drive(drive)?;
-    }
+    
+    // where the main code will run
+    shell::bash_commands();
 
     let term = Term::stdout();
     println!("\nPress any key to exit...");

@@ -1,3 +1,7 @@
+use crate::analyzer::{
+    StorageAnalyzer,
+    constants::*  // Import constants from the module
+};
 use lazy_static::lazy_static;
 use std::{
     collections::HashSet,
@@ -5,6 +9,13 @@ use std::{
     io::{self, Write},
     process,
 };
+
+/*
+    let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
+    for drive in &analyzer.drives.clone() {
+        analyzer.analyze_drive(drive)?;
+    }
+ */
 
 pub fn bash_commands() {
     // Define the HashSet of commands
@@ -46,7 +57,18 @@ pub fn bash_commands() {
                 Ok(path) => println!("{}", path.display()),
                 Err(e) => println!("pwd: error getting current directory: {}", e),
             },
-
+            ["get_drive_space", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass"),
+            },
+            ["get_file_type_distribution", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass"),
+            },
+            ["get_largest_files", ..] => match command.get(1) {
+                Some(drive_space) => println!("{}", drive_space),
+                None => println!("didnt put any inputs dumbass"),
+            },
 
             _ => {
                 println!("{}: not found", command[0]);
