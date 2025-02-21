@@ -2,6 +2,7 @@ use crate::analyzer::{
     StorageAnalyzer,
     constants::*  // Import constants from the module
 };
+use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
 use std::{
     collections::HashSet,
@@ -9,13 +10,25 @@ use std::{
     io::{self, Write},
     process,
 };
-
+use whoami::fallible;
 /*
     let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
     for drive in &analyzer.drives.clone() {
         analyzer.analyze_drive(drive)?;
     }
  */
+fn prompter_fn() {
+    let user = whoami::username();
+    let host = fallible::hostname();
+    let prompt= format!(
+        "{}@{}:{} ",
+        user.green(),
+        "host".blue(),
+        "$".yellow()
+    );
+    print!("{}", prompt);
+    io::stdout().flush().unwrap();
+}
 
 pub fn bash_commands() {
     // Define the HashSet of commands
@@ -84,11 +97,11 @@ pub fn bash_commands() {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for RecentLargeFiles"),
             },
-            ["oldlargefiles", ..] => match command.get(1) {
+            ["old-large-files", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for OldLargeFiles"),
             },
-            ["driveanalysis", ..] => match command.get(1) {
+            ["drive-analysis", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for DriveAnalysis"),
             },
