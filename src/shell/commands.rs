@@ -35,7 +35,11 @@ pub fn bash_commands() {
     // Define the HashSet of commands
     lazy_static! {
         static ref BUILTIN_COMMANDS: HashSet<&'static str> = {
-            vec!["exit", "echo", "type", "pwd"]
+            vec![
+                "exit", "echo", "type", "pwd", "drive-space",
+                "file-type-dist", "largest-files", "largest-folder",
+                "recent-large-files", "old-large-files", "drive-analysis"
+            ]
                 .into_iter()
                 .collect()
         };
@@ -76,23 +80,23 @@ pub fn bash_commands() {
             },
             
             // drive analysis commands
-            ["drivespace", ..] => match command.get(1) {
+            ["drive-space", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
-            ["filetypedist", ..] => match command.get(1) {
+            ["file-type-dist", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for FileTypeDist"),
             },
-            ["largestfiles", ..] => match command.get(1) {
+            ["largest-files", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for LargestFiles"),
             },
-            ["largestfolder", ..] => match command.get(1) {
+            ["largest-folder", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for LargestFolder"),
             },
-            ["recentlargefiles", ..] => match command.get(1) {
+            ["recent-large-files", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for RecentLargeFiles"),
             },
