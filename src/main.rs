@@ -1,7 +1,9 @@
 mod analyzer;
 mod shell;
 use console::Term;
-
+use crate::analyzer::{
+    constants::*  // Import constants from the module
+};
 // Constants can stay here or move to analyzer/constants.rs if you prefer
 
 #[cfg(feature = "DEBUG_MODE")]
@@ -16,21 +18,14 @@ fn main() -> std::io::Result<()> {
     #[cfg(debug_assertions)]
     {
         println!("--- WARNING ---");
-        println!("DEV PROFILE : Running in debug mode!");
-        println!("if you are a normal user, consider using cargo run --release");
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        println!("-- INFO --");
-        println!("  RELEASE PROFILE : Running in release mode!");
-        println!("  Optimizations enabled, debug off, overflow checks off");
+        println!("DEV PROFILE : Running dev profile!");
+        println!("if you are a normal user, consider using cargo run --release\n\n\n");
     }
 
     #[cfg(feature = "DEBUG_MODE")]
     {
         println!("--- WARNING ---");
-        println!("DEBUG MODE : Running in debug mode!");
+        println!("DEBUG MODE : Running debug function!");
         return debug_test();
     }
     
