@@ -62,31 +62,31 @@ pub fn bash_commands() {
             // drive analysis commands
             ["DriveSpace", ..] => match command.get(3) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass get_drive_space"),
+                None => println!("didnt put any inputs for DriveSpace"),
             },
             ["FileTypeDist", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass get_file_type_distribution"),
+                None => println!("didnt put any inputs for FileTypeDist"),
             },
             ["LargestFiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass LargestFiles"),
+                None => println!("didnt put any inputs for LargestFiles"),
             },
             ["LargestFolder", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass LargestFolder"),
+                None => println!("didnt put any inputs for LargestFolder"),
             },
             ["RecentLargeFiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass RecentLargeFiles"),
+                None => println!("didnt put any inputs for RecentLargeFiles"),
             },
             ["OldLargeFiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass OldLargeFiles"),
+                None => println!("didnt put any inputs for OldLargeFiles"),
             },
             ["DriveAnalysis", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
-                None => println!("didnt put any inputs dumbass DriveAnalysis"),
+                None => println!("didnt put any inputs for DriveAnalysis"),
             },
 
             
