@@ -35,7 +35,11 @@ pub fn bash_commands() {
     let mut input = String::new();
     loop {
         stdin.read_line(&mut input).unwrap();
-        let command: Vec<_> = input.trim().split_whitespace().collect();
+        let command: Vec<String> = input
+            .trim()
+            .split_whitespace()
+            .map(|s| s.to_lowercase())
+            .collect();
 
         if command.is_empty() {
             input.clear();
@@ -44,7 +48,7 @@ pub fn bash_commands() {
             continue;
         }
 
-        match command[..] {
+        match command.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
             // some default commands
             ["exit", ..] => match command.get(1) {
                 Some(code) => process::exit(code.parse::<i32>().unwrap()),
@@ -60,31 +64,31 @@ pub fn bash_commands() {
             },
             
             // drive analysis commands
-            ["DriveSpace", ..] => match command.get(3) {
+            ["drivespace", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
-            ["FileTypeDist", ..] => match command.get(1) {
+            ["filetypedist", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for FileTypeDist"),
             },
-            ["LargestFiles", ..] => match command.get(1) {
+            ["largestfiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for LargestFiles"),
             },
-            ["LargestFolder", ..] => match command.get(1) {
+            ["largestfolder", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for LargestFolder"),
             },
-            ["RecentLargeFiles", ..] => match command.get(1) {
+            ["recentlargefiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for RecentLargeFiles"),
             },
-            ["OldLargeFiles", ..] => match command.get(1) {
+            ["oldlargefiles", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for OldLargeFiles"),
             },
-            ["DriveAnalysis", ..] => match command.get(1) {
+            ["driveanalysis", ..] => match command.get(1) {
                 Some(drive_space) => println!("{}", drive_space),
                 None => println!("didnt put any inputs for DriveAnalysis"),
             },
