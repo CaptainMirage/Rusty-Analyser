@@ -19,11 +19,11 @@ use whoami::fallible;
  */
 fn prompter_fn() {
     let user = whoami::username();
-    let host = fallible::hostname();
+    let host = fallible::hostname().unwrap();
     let prompt= format!(
-        "{}@{}:{} ",
+        "\n{}@{}\n{} ",
         user.green(),
-        "host".blue(),
+        host.blue(),
         "$".yellow()
     );
     print!("{}", prompt);
@@ -40,8 +40,7 @@ pub fn bash_commands() {
         };
     }
 
-    print!("$ ");
-    io::stdout().flush().unwrap();
+    prompter_fn();
 
     // Wait for user input
     let stdin = io::stdin();
@@ -56,8 +55,7 @@ pub fn bash_commands() {
 
         if command.is_empty() {
             input.clear();
-            print!("$ ");
-            io::stdout().flush().unwrap();
+            prompter_fn();
             continue;
         }
 
@@ -112,7 +110,6 @@ pub fn bash_commands() {
             }
         }
         input.clear();
-        print!("$ ");
-        io::stdout().flush().unwrap();
+        prompter_fn();
     }
 }
