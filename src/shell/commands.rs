@@ -21,10 +21,11 @@ fn prompter_fn() {
     let user = whoami::username();
     let host = fallible::hostname().unwrap();
     let prompt= format!(
-        "\n{}@{}\n{} ",
+        "\n{}{}{}\n{} ",
         user.green(),
+        "@".white(),
         host.blue(),
-        "$".yellow()
+        "$".cyan()
     );
     print!("{}", prompt);
     io::stdout().flush().unwrap();
