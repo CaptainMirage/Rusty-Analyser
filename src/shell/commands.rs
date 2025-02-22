@@ -99,6 +99,10 @@ pub fn bash_commands() {
                 Ok(path) => println!("{}", path.display()),
                 Err(e) => println!("pwd: error getting current directory: {}", e),
             },
+            ["help"] => match command.get(1..) {
+                Ok(dacommand) => println!(),
+                None => println!(),
+            },
             
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
