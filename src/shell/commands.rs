@@ -83,34 +83,49 @@ pub fn bash_commands() {
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
                 Some(drive) => {
-                    if let Err(e) = analyzer.print_drive_analysis(drive) {
-                        eprintln!("Error: {}", e);
+                    let drive = drive.to_uppercase();
+
+                    if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
+                        // User entered just the letter (e.g., "C"), format it properly
+                        let formatted_drive = format!("{}:/", drive);
+                        if let Err(e) = analyzer.print_drive_analysis(&formatted_drive) {
+                            eprintln!("Error: {}", e);
+                        }
+                    } else if drive.len() == 3 && drive.ends_with(":/") && drive.chars().next().unwrap().is_ascii_alphabetic() {
+                        // User entered a valid full path (e.g., "C:/"), use it directly
+                        if let Err(e) = analyzer.print_drive_analysis(&drive) {
+                            eprintln!("Error: {}", e);
+                        }
+                    } else {
+                        // Invalid input, show an error message
+                        eprintln!("Invalid drive format. Please enter a single letter (e.g., 'C') or a valid drive path (e.g., 'C:/').");
                     }
                 }
                 None => println!("didnt put any inputs for DriveSpace"),
             },
+            
             ["file-type-dist", ..] => match command.get(1) {
-                Some(Drive) => println!("{}", Drive),
+                Some(drive) => println!("{}", drive),
                 None => println!("didnt put any inputs for FileTypeDist"),
             },
             ["largest-files", ..] => match command.get(1) {
-                Some(Drive) => println!("{}", Drive),
+                Some(drive) => println!("{}", drive),
                 None => println!("didnt put any inputs for LargestFiles"),
             },
             ["largest-folder", ..] => match command.get(1) {
-                Some(Drive) => println!("{}", Drive),
+                Some(drive) => println!("{}", drive),
                 None => println!("didnt put any inputs for LargestFolder"),
             },
             ["recent-large-files", ..] => match command.get(1) {
-                Some(Drive) => println!("{}", Drive),
+                Some(drive) => println!("{}", drive),
                 None => println!("didnt put any inputs for RecentLargeFiles"),
             },
             ["old-large-files", ..] => match command.get(1) {
-                Some(Drive) => println!("{}", Drive),
+                Some(drive) => println!("{}", drive),
                 None => println!("didnt put any inputs for OldLargeFiles"),
             },
             ["drive-analysis", ..] => match command.get(1) {
-                Some(Drive) => println!("{}", Drive),
+                Some(drive) => println!("{}", drive),
                 None => println!("didnt put any inputs for DriveAnalysis"),
             },
             
