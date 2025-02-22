@@ -107,13 +107,13 @@ pub fn bash_commands() {
             
             ["file-type-dist", ..] => match command.get(1) {
                     Some(drive) => validate_and_format_drive
-                        (drive, |d| analyzer.print_drive_analysis(d)),
+                        (drive, |d| analyzer.print_file_type_distribution(d)),
                     None => println!("didnt put any inputs for DriveSpace"),
                 }
             
             ["largest-files", ..] => match command.get(1) {
                     Some(drive) => validate_and_format_drive
-                        (drive, |d| analyzer.print_drive_analysis(d)),
+                        (drive, |d| analyzer.print_largest_files(d)),
                     None => println!("didnt put any inputs for DriveSpace"),
                 }
             
@@ -125,19 +125,19 @@ pub fn bash_commands() {
             
             ["recent-large-files", ..] => match command.get(1) {
                 Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_drive_analysis(d)),
+                    (drive, |d| analyzer.print_recent_large_files(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
             }
             
             ["old-large-files", ..] => match command.get(1) {
                 Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_drive_analysis(d)),
+                    (drive, |d| analyzer.print_old_large_files(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
             }
             
             ["drive-analysis", ..] => match command.get(1) {
                 Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_drive_analysis(d)),
+                    (drive, |d| analyzer.analyze_drive(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
             }
             
