@@ -3,17 +3,16 @@ use crate::analyzer::{
     constants::*
 };
 use super::{
-    types::*
+    help_cmd::*
 };
 use std::{
-    collections::HashSet,
     env,
-    collections::HashMap,
     io::{self, Write},
     process,
 };
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
+use rayon::max_num_threads;
 use whoami::fallible;
 
 
@@ -55,33 +54,29 @@ where
     }
 }
 
+fn print_command_help(commands: &[String]) {
+    if let Some(cmd) = commands.first() {  // Get the first command
+        if let Some(info) = COMMAND_DESCRIPTIONS.get(cmd.as_str()) {
+            print!("\n{}\n-------------\n{}",
+                     info.title.bright_white(),
+                     info.description
+            );
+        } else {
+            println!("Command not found: {}", cmd);
+        }
+    }
+}
+
+fn print_all_help() {
+    for (_, info) in COMMAND_DESCRIPTIONS.iter() {
+        println!("\n{}\n-------------\n{}",
+                 info.title.bright_white(),
+                 info.description
+        );
+    }
+}
 
 pub fn bash_commands() {
-    // Define the HashSet of commands
-    lazy_static! {
-        static ref BUILTIN_COMMANDS: HashSet<&'static str> = {
-            vec![
-                "exit", "echo", "type", "pwd", "drive-space",
-                "file-type-dist", "largest-files", "largest-folder",
-                "recent-large-files", "old-large-files", "full-drive-analysis"
-            ]
-                .into_iter()
-                .collect()
-        };
-        // Define the HashSet of command descs
-        static ref COMMAND_DESCRIPTIONS: HashMap<&'static str, CommandInfo> = {
-            let mut m = HashMap::new();
-            m.insert("help", CommandInfo {
-                title: "Lorem ipsum",
-                description: ""
-            });
-            m.insert("exit", CommandInfo {
-                title: "Oder amet",
-                description: ""
-            });
-            m
-        };
-    }
     
     prompter_fn();
 
@@ -117,6 +112,10 @@ pub fn bash_commands() {
                 Ok(path) => println!("{}", path.display()),
                 Err(e) => println!("pwd: error getting current directory: {}", e),
             },
+            ["help", ..] => match command.get(1..) {
+                Some(Cword) => print_command_help(Cword),
+                None => print_all_help(),
+            }
             
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
