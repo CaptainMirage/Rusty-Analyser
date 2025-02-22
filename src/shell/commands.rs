@@ -2,15 +2,20 @@ use crate::analyzer::{
     StorageAnalyzer,
     constants::*
 };
-use colored::{ColoredString, Colorize};
-use lazy_static::lazy_static;
+use super::{
+    types::*
+};
 use std::{
     collections::HashSet,
     env,
+    collections::HashMap,
     io::{self, Write},
     process,
 };
+use colored::{ColoredString, Colorize};
+use lazy_static::lazy_static;
 use whoami::fallible;
+
 
 fn prompter_fn() {
     let _user: String = whoami::username();
@@ -63,8 +68,21 @@ pub fn bash_commands() {
                 .into_iter()
                 .collect()
         };
+        // Define the HashSet of command descs
+        static ref COMMAND_DESCRIPTIONS: HashMap<&'static str, CommandInfo> = {
+            let mut m = HashMap::new();
+            m.insert("help", CommandInfo {
+                title: "Lorem ipsum",
+                description: ""
+            });
+            m.insert("exit", CommandInfo {
+                title: "Oder amet",
+                description: ""
+            });
+            m
+        };
     }
-
+    
     prompter_fn();
 
     // Wait for user input
@@ -98,10 +116,6 @@ pub fn bash_commands() {
             ["pwd"] => match env::current_dir() {
                 Ok(path) => println!("{}", path.display()),
                 Err(e) => println!("pwd: error getting current directory: {}", e),
-            },
-            ["help"] => match command.get(1..) {
-                Ok(dacommand) => println!(),
-                None => println!(),
             },
             
             // drive analysis commands
