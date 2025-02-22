@@ -67,6 +67,7 @@ fn print_command_help(commands: &[String]) {
     }
 }
 
+// TODO - this shit doesnt work fam
 fn print_all_help() {
     for (_, info) in COMMAND_DESCRIPTIONS.iter() {
         println!("\n{}\n-------------\n{}",
@@ -113,7 +114,7 @@ pub fn bash_commands() {
                 Err(e) => println!("pwd: error getting current directory: {}", e),
             },
             ["help", ..] => match command.get(1..) {
-                Some(Cword) => print_command_help(Cword),
+                Some(cword) => print_command_help(cword),
                 None => print_all_help(),
             }
             
