@@ -31,17 +31,20 @@ where
     F: FnOnce(&str) -> Result<(), io::Error>,
 {
     let drive = drive.to_uppercase();
-
+    
     if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
+        // User entered just the letter (e.g., "C"), format it properly
         if let Err(e) = action(format!("{}:/", drive).as_str()) { 
             eprintln!("Error: {}", e);
         }
     } else if drive.len() == 3 && drive.ends_with(":/") &&
         drive.chars().next().unwrap().is_ascii_alphabetic() {
+        // User entered a valid full path (e.g., "C:/"), use it directly
         if let Err(e) = action(drive.as_str()) {
             eprintln!("Error: {}", e);
         }
     } else {
+        // Invalid input
         eprintln!("Invalid drive format. Please enter a single letter (e.g., 'C')\
          or a valid drive path (e.g., 'C:/').");
     }
