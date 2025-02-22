@@ -11,12 +11,7 @@ use std::{
     process,
 };
 use whoami::fallible;
-/*
-    let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
-    for drive in &analyzer.drives.clone() {
-        analyzer.analyze_drive(drive)?;
-    }
- */
+
 fn prompter_fn() {
     let _user: String = whoami::username();
     let _host: String = fallible::hostname().unwrap();
@@ -30,6 +25,29 @@ fn prompter_fn() {
     print!("{}", prompt);
     io::stdout().flush().unwrap();
 }
+
+fn validate_and_format_drive<F>(drive: &str, action: F)
+where
+    F: FnOnce(&str) -> Result<(), std::io::Error>,
+{
+    let drive = drive.to_uppercase();
+
+    if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
+        let formatted_drive = format!("{}:/", drive);
+        if let Err(e) = action(formatted_drive.as_str()) { 
+            eprintln!("Error: {}", e);
+        }
+    } else if drive.len() == 3 && drive.ends_with(":/") &&
+        drive.chars().next().unwrap().is_ascii_alphabetic() {
+        if let Err(e) = action(drive.as_str()) {
+            eprintln!("Error: {}", e);
+        }
+    } else {
+        eprintln!("Invalid drive format. Please enter a single letter (e.g., 'C')\
+         or a valid drive path (e.g., 'C:/').");
+    }
+}
+
 
 pub fn bash_commands() {
     // Define the HashSet of commands
@@ -82,53 +100,46 @@ pub fn bash_commands() {
             
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
-                Some(drive) => {
-                    let drive = drive.to_uppercase();
-
-                    if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
-                        // User entered just the letter (e.g., "C"), format it properly
-                        let formatted_drive = format!("{}:/", drive);
-                        if let Err(e) = analyzer.print_drive_analysis(&formatted_drive) {
-                            eprintln!("Error: {}", e);
-                        }
-                    } else if drive.len() == 3 && drive.ends_with(":/") && drive.chars().next().unwrap().is_ascii_alphabetic() {
-                        // User entered a valid full path (e.g., "C:/"), use it directly
-                        if let Err(e) = analyzer.print_drive_analysis(&drive) {
-                            eprintln!("Error: {}", e);
-                        }
-                    } else {
-                        // Invalid input, show an error message
-                        eprintln!("Invalid drive format. Please enter a single letter (e.g., 'C') or a valid drive path (e.g., 'C:/').");
-                    }
-                }
+                Some(drive) => validate_and_format_drive
+                    (drive, |d| analyzer.print_drive_analysis(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
-            },
+            }
             
             ["file-type-dist", ..] => match command.get(1) {
-                Some(drive) => println!("{}", drive),
-                None => println!("didnt put any inputs for FileTypeDist"),
-            },
-            ["largest-files", ..] => match command.get(1) {
-                Some(drive) => println!("{}", drive),
-                None => println!("didnt put any inputs for LargestFiles"),
-            },
-            ["largest-folder", ..] => match command.get(1) {
-                Some(drive) => println!("{}", drive),
-                None => println!("didnt put any inputs for LargestFolder"),
-            },
-            ["recent-large-files", ..] => match command.get(1) {
-                Some(drive) => println!("{}", drive),
-                None => println!("didnt put any inputs for RecentLargeFiles"),
-            },
-            ["old-large-files", ..] => match command.get(1) {
-                Some(drive) => println!("{}", drive),
-                None => println!("didnt put any inputs for OldLargeFiles"),
-            },
-            ["drive-analysis", ..] => match command.get(1) {
-                Some(drive) => println!("{}", drive),
-                None => println!("didnt put any inputs for DriveAnalysis"),
-            },
+                    Some(drive) => validate_and_format_drive
+                        (drive, |d| analyzer.print_drive_analysis(d)),
+                    None => println!("didnt put any inputs for DriveSpace"),
+                }
             
+            ["largest-files", ..] => match command.get(1) {
+                    Some(drive) => validate_and_format_drive
+                        (drive, |d| analyzer.print_drive_analysis(d)),
+                    None => println!("didnt put any inputs for DriveSpace"),
+                }
+            
+            ["largest-folder", ..] => match command.get(1) {
+                    Some(drive) => validate_and_format_drive
+                        (drive, |d| analyzer.print_drive_analysis(d)),
+                    None => println!("didnt put any inputs for DriveSpace"),
+                }
+            
+            ["recent-large-files", ..] => match command.get(1) {
+                Some(drive) => validate_and_format_drive
+                    (drive, |d| analyzer.print_drive_analysis(d)),
+                None => println!("didnt put any inputs for DriveSpace"),
+            }
+            
+            ["old-large-files", ..] => match command.get(1) {
+                Some(drive) => validate_and_format_drive
+                    (drive, |d| analyzer.print_drive_analysis(d)),
+                None => println!("didnt put any inputs for DriveSpace"),
+            }
+            
+            ["drive-analysis", ..] => match command.get(1) {
+                Some(drive) => validate_and_format_drive
+                    (drive, |d| analyzer.print_drive_analysis(d)),
+                None => println!("didnt put any inputs for DriveSpace"),
+            }
             
             _ => {
                 println!("{}: not found", command[0]);
