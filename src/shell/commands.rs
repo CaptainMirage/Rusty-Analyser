@@ -28,13 +28,12 @@ fn prompter_fn() {
 
 fn validate_and_format_drive<F>(drive: &str, action: F)
 where
-    F: FnOnce(&str) -> Result<(), std::io::Error>,
+    F: FnOnce(&str) -> Result<(), io::Error>,
 {
     let drive = drive.to_uppercase();
 
     if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
-        let formatted_drive = format!("{}:/", drive);
-        if let Err(e) = action(formatted_drive.as_str()) { 
+        if let Err(e) = action(format!("{}:/", drive).as_str()) { 
             eprintln!("Error: {}", e);
         }
     } else if drive.len() == 3 && drive.ends_with(":/") &&
@@ -56,7 +55,7 @@ pub fn bash_commands() {
             vec![
                 "exit", "echo", "type", "pwd", "drive-space",
                 "file-type-dist", "largest-files", "largest-folder",
-                "recent-large-files", "old-large-files", "drive-analysis"
+                "recent-large-files", "old-large-files", "full-drive-analysis"
             ]
                 .into_iter()
                 .collect()
@@ -101,7 +100,7 @@ pub fn bash_commands() {
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
                 Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_drive_analysis(d)),
+                    (drive, |d| analyzer.print_drive_space_overview(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
             }
             
@@ -119,7 +118,7 @@ pub fn bash_commands() {
             
             ["largest-folder", ..] => match command.get(1) {
                     Some(drive) => validate_and_format_drive
-                        (drive, |d| analyzer.print_drive_analysis(d)),
+                        (drive, |d| analyzer.print_largest_folders(d)),
                     None => println!("didnt put any inputs for DriveSpace"),
                 }
             
@@ -135,7 +134,7 @@ pub fn bash_commands() {
                 None => println!("didnt put any inputs for DriveSpace"),
             }
             
-            ["drive-analysis", ..] => match command.get(1) {
+            ["full-drive-analysis", ..] => match command.get(1) {
                 Some(drive) => validate_and_format_drive
                     (drive, |d| analyzer.analyze_drive(d)),
                 None => println!("didnt put any inputs for DriveSpace"),

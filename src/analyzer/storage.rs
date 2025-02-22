@@ -203,7 +203,7 @@ impl StorageAnalyzer {
         println!("Date: {}", Utc::now().format(DATE_FORMAT));
         println!("Drive: {}", drive);
 
-        self.print_drive_analysis(drive)?;
+        self.print_drive_space_overview(drive)?;
         self.print_largest_folders(drive)?;
         self.print_file_type_distribution(drive)?;
         self.print_largest_files(drive)?;
@@ -213,7 +213,7 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    pub fn print_drive_analysis(&self, drive: &str) -> io::Result<()> {
+    pub fn print_drive_space_overview(&self, drive: &str) -> io::Result<()> {
         match self.get_drive_space(drive) {
             Ok(analysis) => {
                 println!("\n--- Drive Space Overview ---");
