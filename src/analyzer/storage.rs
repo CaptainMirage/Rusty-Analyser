@@ -213,7 +213,7 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    fn print_drive_analysis(&self, drive: &str) -> io::Result<()> {
+    pub fn print_drive_analysis(&self, drive: &str) -> io::Result<()> {
         match self.get_drive_space(drive) {
             Ok(analysis) => {
                 println!("\n--- Drive Space Overview ---");
@@ -231,7 +231,7 @@ impl StorageAnalyzer {
 
     // Analyzes and returns largest folders up to 3 levels deep
     // Excludes hidden folders (those starting with '.')
-    fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
+    pub fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
         println!("\n--- Largest Folders (Top 10) ---");
         let largest_folders = self.get_largest_folders(drive)?;
         let mut cnt: i8 = 0;
@@ -244,7 +244,7 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
+    pub fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- File Type Distribution (Top 10) ---");
         let distribution = self.get_file_type_distribution(drive)?;
         for (ext, size, count) in distribution.iter().take(10) {
@@ -301,7 +301,7 @@ impl StorageAnalyzer {
         })
     }
 
-    fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
+    pub fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Largest Files ---");
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
@@ -338,7 +338,7 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
-    fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
+    pub fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Recent Large Files ---");
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
@@ -375,7 +375,7 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
-    fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
+    pub fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Old Large Files (>6 months old) ---");
         let files = self.get_old_large_files(drive)?;
         for file in files.iter().take(10) {

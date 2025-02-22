@@ -1,6 +1,6 @@
 use crate::analyzer::{
     StorageAnalyzer,
-    constants::*  // Import constants from the module
+    constants::*
 };
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
@@ -18,13 +18,13 @@ use whoami::fallible;
     }
  */
 fn prompter_fn() {
-    let user = whoami::username();
-    let host = fallible::hostname().unwrap();
-    let prompt= format!(
+    let _user: String = whoami::username();
+    let _host: String = fallible::hostname().unwrap();
+    let prompt: String = format!(
         "\n{}{}{}\n{} ",
-        user.green(),
+        "user".green(),
         "@".white(),
-        host.blue(),
+        "host".blue(),
         "$".cyan()
     );
     print!("{}", prompt);
@@ -50,6 +50,7 @@ pub fn bash_commands() {
     // Wait for user input
     let stdin = io::stdin();
     let mut input = String::new();
+    let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
     loop {
         stdin.read_line(&mut input).unwrap();
         let command: Vec<String> = input
@@ -81,34 +82,38 @@ pub fn bash_commands() {
             
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(drive) => {
+                    if let Err(e) = analyzer.print_drive_analysis(drive) {
+                        eprintln!("Error: {}", e);
+                    }
+                }
                 None => println!("didnt put any inputs for DriveSpace"),
             },
             ["file-type-dist", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(Drive) => println!("{}", Drive),
                 None => println!("didnt put any inputs for FileTypeDist"),
             },
             ["largest-files", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(Drive) => println!("{}", Drive),
                 None => println!("didnt put any inputs for LargestFiles"),
             },
             ["largest-folder", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(Drive) => println!("{}", Drive),
                 None => println!("didnt put any inputs for LargestFolder"),
             },
             ["recent-large-files", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(Drive) => println!("{}", Drive),
                 None => println!("didnt put any inputs for RecentLargeFiles"),
             },
             ["old-large-files", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(Drive) => println!("{}", Drive),
                 None => println!("didnt put any inputs for OldLargeFiles"),
             },
             ["drive-analysis", ..] => match command.get(1) {
-                Some(drive_space) => println!("{}", drive_space),
+                Some(Drive) => println!("{}", Drive),
                 None => println!("didnt put any inputs for DriveAnalysis"),
             },
-
+            
             
             _ => {
                 println!("{}: not found", command[0]);
