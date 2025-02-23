@@ -71,7 +71,7 @@ fn print_all_help() {
     // commands.sort_by_key(|(cmd, _)| *cmd);
 
     for (_, info) in COMMAND_DESCRIPTIONS.iter()  {
-        print!("\n{}\n-------------\n{}\n",
+        print!("\n{}\n-------------\n{}",
                info.title.bright_white(),
                info.description
         );

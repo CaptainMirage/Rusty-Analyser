@@ -28,50 +28,50 @@ lazy_static! {
                 then there is no need for an explanation of what this command does"
             });
             m.insert("echo", CommandInfo {
-            title: "",
-            description: ""
+            title: "Echo",
+            description: "Repeats what you say, probably"
             });
             m.insert("type", CommandInfo {
-            title: "",
-            description: ""
+            title: "Type",
+            description: "It just tells you if the command exists"
             });
             m.insert("pwd", CommandInfo {
-            title: "",
-            description: ""
+            title: "pwd",
+            description: "Shows the location the program is ran in"
             });
             m.insert("drive-space", CommandInfo {
-            title: "",
-            description: ""
+            title: "Drive Space",
+            description: "Shows the amount of space in a drive, what else do you want?"
             });
             m.insert("file-type-dist", CommandInfo {
-            title: "",
-            description: ""
+            title: "File Type Distribution",
+            description: "Shows the distribution of the 10 file formats taking the largest space"
             });
             m.insert("largest-files", CommandInfo {
-            title: "",
-            description: ""
-            });
+            title: "Largest Files",
+            description: "Shows the top 10 largest files"
+            }); 
             m.insert("largest folder", CommandInfo {
-            title: "",
-            description: ""
+            title: "Largest Folder",
+            description: "Shows the top 10 largest folders up to 3 levels deep \n\
+            (Excludes hidden folders [those starting with '.'])"
             });
             m.insert("recent-large-files", CommandInfo {
-            title: "",
-            description: ""
+            title: "Recent Large Files",
+            description: "Shows most recent files within last 30 days that are large"
             });
             m.insert("old-large-files", CommandInfo {
-            title: "",
-            description: ""
+            title: "Old Large Files",
+            description: "Shows older than 6 months files that are your m- i mean large"
             });
             m.insert("full-drive-analysis", CommandInfo {
-            title: "",
+            title: "Full Drive Analysis",
+            description: "cant you read?"
+            });
+            m.insert("temp-680089", CommandInfo {
+            title: "????????",
             description: ""
             });
-            m.insert("temp-694208008", CommandInfo {
-            title: "",
-            description: ""
-            });
-            
             m
         };
     }
