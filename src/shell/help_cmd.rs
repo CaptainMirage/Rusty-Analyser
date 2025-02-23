@@ -8,7 +8,7 @@ use super::{
 lazy_static! {
         pub static ref BUILTIN_COMMANDS: HashSet<&'static str> = {
             vec![
-                "exit", "echo", "type", "pwd", "drive-space",
+                "exit", "echo", "type", "pwd", "help", "drive-space",
                 "file-type-dist", "largest-files", "largest-folder",
                 "recent-large-files", "old-large-files", "full-drive-analysis"
             ]
@@ -19,13 +19,13 @@ lazy_static! {
             let mut m = HashMap::new();
             m.insert("help", CommandInfo {
                 title: "Help",
-                description: "Lorem ipsum odor amet, consectetuer adipiscing elit. \n\
-                Pellentesque porttitor finibus donec facilisi montes, tristique cras mauris?"
+                description: "Displays all commands descriptions \n\
+                if an argument is given, it gives the command description of the said argument"
             });
             m.insert("exit", CommandInfo {
                 title: "Exit",
-                description: "Lorem ipsum odor amet, consectetuer adipiscing elit. \n\
-                 Amet cras hendrerit aenean elementum platea curabitur pellentesque!"
+                description: "hey, you, yes you, if you can read this and understand it, \n\
+                then there is no need for an explanation of what this command does"
             });
             m
         };
