@@ -54,26 +54,28 @@ where
     }
 }
 
-fn print_command_help(commands: &[String]) {
-    if let Some(cmd) = commands.first() {  // Get the first command
-        if let Some(info) = COMMAND_DESCRIPTIONS.get(cmd.as_str()) {
-            print!("\n{}\n-------------\n{}",
+fn print_command_help(command: &String) {
+        if let Some(info) = COMMAND_DESCRIPTIONS.get(command.as_str()) {
+            print!("\n{}\n-------------\n{}\n",
                      info.title.bright_white(),
                      info.description
             );
         } else {
-            println!("Command not found: {}", cmd);
+            println!("Command not found: {}", command);
         }
-    }
 }
 
-// TODO - this shit doesnt work fam
 fn print_all_help() {
-    for (_, info) in COMMAND_DESCRIPTIONS.iter() {
-        println!("\n{}\n-------------\n{}",
-                 info.title.bright_white(),
-                 info.description
+    // for if I want to sort it alphabetically
+    // let mut commands: Vec<_> = COMMAND_DESCRIPTIONS.iter().collect();
+    // commands.sort_by_key(|(cmd, _)| *cmd);
+
+    for (_, info) in COMMAND_DESCRIPTIONS.iter()  {
+        print!("\n{}\n-------------\n{}\n",
+               info.title.bright_white(),
+               info.description
         );
+        println!(); // Add an extra newline between commands
     }
 }
 
@@ -113,7 +115,7 @@ pub fn bash_commands() {
                 Ok(path) => println!("{}", path.display()),
                 Err(e) => println!("pwd: error getting current directory: {}", e),
             },
-            ["help", ..] => match command.get(1..) {
+            ["help", ..] => match command.get(1) {
                 Some(cword) => print_command_help(cword),
                 None => print_all_help(),
             }
