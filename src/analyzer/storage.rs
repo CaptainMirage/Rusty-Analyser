@@ -29,6 +29,7 @@ use winapi::um::{
 pub struct StorageAnalyzer {
     pub drives: Vec<String>,
     file_cache: HashMap<String, Vec<FileInfo>>,
+    folder_cache: HashMap<String, Vec<FolderSize>>
 }
 
 impl StorageAnalyzer {
@@ -37,6 +38,7 @@ impl StorageAnalyzer {
         StorageAnalyzer {
             drives,
             file_cache: HashMap::new(),
+            folder_cache: HashMap::new(),
         }
     }
 
@@ -117,45 +119,65 @@ impl StorageAnalyzer {
 
     fn collect_and_cache_files(&mut self, drive: &str) -> io::Result<()> {
         if self.file_cache.contains_key(drive) {
-            println!("Cached scan found! proceeding..");
+            println!("Cached file scan found! Proceeding..");
+            return Ok(());
+        } else if self.folder_cache.contains_key(drive) { 
+            println!("Cached folder scan found! Proceeding..");
             return Ok(());
         }
 
         println!("No cache found, scanning..");
+
         let file_cache = Arc::new(Mutex::new(Vec::new()));
-        let walker = WalkDir::new(drive).into_iter();
+        let folder_cache = Arc::new(Mutex::new(Vec::new()));
 
-        // Adjust threads if needed
-        let pool = ThreadPoolBuilder::new().num_threads(8).build().unwrap(); 
+        // Use WalkDir with max depth (optional) to avoid scanning deeply nested directories
+        let walker = WalkDir::new(drive)
+            .into_iter()
+            .filter_map(Result::ok) // Skip errors instead of crashing
+            .filter(|e| e.file_type().is_file()); // Process only files
 
-        pool.scope(|s| {
-            for entry in walker {
-                let file_cache = Arc::clone(&file_cache);
-                s.spawn(move |_| {
-                    if let Ok(entry) = entry {
-                        if entry.file_type().is_file() {
-                            if let Ok(metadata) = entry.metadata() {
-                                let file_info = FileInfo {
-                                    full_path: entry.path().to_string_lossy().to_string(),
-                                    size_mb: metadata.len() as f64 / MB_TO_BYTES,
-                                    last_modified: metadata.modified().ok().map(system_time_to_string),
-                                    last_accessed: metadata.accessed().ok().map(system_time_to_string),
-                                };
-                                file_cache.lock().unwrap().push(file_info);
-                            }
-                        }
-                    }
-                });
-            }
-        });
+        // Process in parallel using Rayon
+        let files: Vec<FileInfo> = walker
+            .par_bridge() // Enables parallel iteration
+            .filter_map(|entry| {
+                let metadata = entry.metadata().ok()?;
+                Some(FileInfo {
+                    full_path: entry.path().to_string_lossy().to_string(),
+                    size_mb: metadata.len() as f64 / MB_TO_BYTES,
+                    last_modified: metadata.modified().ok().map(system_time_to_string),
+                    last_accessed: metadata.accessed().ok().map(system_time_to_string),
+                })
+            })
+            .collect(); // Collect all results in one go
 
-        let final_files = Arc::try_unwrap(file_cache).unwrap().into_inner().unwrap();
+        // Cache the files and folders
+        {
+            let mut cache = file_cache.lock().unwrap();
+            cache.extend(files);
+        }
+
+        // Cache folder sizes
+        let folders: Vec<FolderSize> = WalkDir::new(drive)
+            .min_depth(1)
+            .max_depth(3)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|e| e.file_type().is_dir())
+            .filter_map(|entry| self.calculate_folder_size(entry.path()).ok())
+            .collect();
+        {
+            let mut cache = folder_cache.lock().unwrap();
+            cache.extend(folders);
+        }
+
         println!("Scanning complete..");
-        self.file_cache.insert(drive.to_string(), final_files);
-        println!("Caching files..");
+        self.file_cache.insert(drive.to_string(), Arc::try_unwrap(file_cache).unwrap().into_inner().unwrap());
+        self.folder_cache.insert(drive.to_string(), Arc::try_unwrap(folder_cache).unwrap().into_inner().unwrap());
+        println!("Caching files and folders..");
+
         Ok(())
     }
-
     fn get_file_type_distribution(&mut self, drive: &str) -> io::Result<Vec<(String, f64, usize)>> {
         self.collect_and_cache_files(drive)?;
 
@@ -250,16 +272,22 @@ impl StorageAnalyzer {
 
     // Analyzes and returns largest folders up to 3 levels deep
     // Excludes hidden folders (those starting with '.')
-    pub fn print_largest_folders(&self, drive: &str) -> io::Result<()> {
-        println!("\n--- Largest Folders (Top 10) ---");
-        let largest_folders = self.get_largest_folders(drive)?;
-        let mut cnt: i8 = 0;
-        for folder in largest_folders.iter().take(10) {
-            cnt += 1;
-            println!("\n[{}] {}", cnt, folder.folder);
-            println!("  Size: {:.2} GB", folder.size_gb);
-            println!("  Files: {}", folder.file_count);
+    pub fn print_largest_folders(&mut self, drive: &str) -> io::Result<()> {
+        // Check if cache exists and print folder sizes
+        if let Some(folders) = self.folder_cache.get(drive) {
+            println!("\n--- Largest Folders (Top 10) ---");
+            let mut cnt: i8 = 0;
+            for folder in folders.iter().take(10) {
+                cnt += 1;
+                println!("\n[{}] {}", cnt, folder.folder);
+                println!("  Size: {:.2} GB", folder.size_gb);
+                println!("  Files: {}", folder.file_count);
+            }
+        } else {
+            self.collect_and_cache_files(drive)?;  // Scan and cache if not found
+            self.print_largest_folders(drive)?;  // Retry after caching
         }
+
         Ok(())
     }
 
@@ -391,4 +419,3 @@ impl StorageAnalyzer {
         Ok(())
     }
 }
-
