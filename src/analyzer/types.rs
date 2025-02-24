@@ -19,7 +19,7 @@ pub struct FolderSize {
 pub struct FileInfo {
     pub full_path: String,
     pub size_mb: f64,
-    pub last_modified: String,
+    pub last_modified: Option<String>,
     pub last_accessed: Option<String>,
 }
 
