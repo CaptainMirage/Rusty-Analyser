@@ -5,8 +5,13 @@ use super::{
     types::* 
 };
 use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
-use rayon::prelude::*;
-use std::time::{SystemTime, UNIX_EPOCH};
+use rayon::{prelude::*, ThreadPoolBuilder};
+use std::{
+    time::{
+        SystemTime, UNIX_EPOCH},
+    sync::{
+        Arc, Mutex}
+};
 use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
@@ -19,6 +24,7 @@ use winapi::um::{
     fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
     winbase::DRIVE_FIXED,
 };
+
 
 pub struct StorageAnalyzer {
     pub drives: Vec<String>,
@@ -100,40 +106,53 @@ impl StorageAnalyzer {
         })
     }
 
-    // Uses parallel processing for better performance on large directories
+    fn print_file_info(file: &FileInfo) {
+        println!("\n[*] Path: {}", file.full_path);
+        println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
+        println!("    Last Modified: {}", file.last_modified.as_deref().unwrap_or("Unknown"));
+        if let Some(last_accessed) = &file.last_accessed {
+            println!("    Last Accessed: {}", last_accessed);
+        }
+    }
+
     fn collect_and_cache_files(&mut self, drive: &str) -> io::Result<()> {
         if self.file_cache.contains_key(drive) {
+            println!("Cached scan found! proceeding..");
             return Ok(());
         }
 
-        let files: Vec<FileInfo> = WalkDir::new(drive)
-            .into_iter()
-            .par_bridge() // Enable parallel processing
-            .filter_map(Result::ok)
-            .filter(|e| e.file_type().is_file())
-            .filter_map(|entry| {
-                entry
-                    .metadata()
-                    .ok()
-                    .map(|metadata| {
-                        let file_size = metadata.len() as f64 / MB_TO_BYTES;
-                        let last_modified =
-                            metadata.modified().ok().map(system_time_to_string);
-                        let last_accessed =
-                            metadata.accessed().ok().map(system_time_to_string);
+        println!("No cache found, scanning..");
+        let file_cache = Arc::new(Mutex::new(Vec::new()));
+        let walker = WalkDir::new(drive).into_iter();
 
-                        last_modified.map(|modified| FileInfo {
-                            full_path: entry.path().to_string_lossy().to_string(),
-                            size_mb: file_size,
-                            last_modified: modified,
-                            last_accessed,
-                        })
-                    })
-                    .flatten()
-            })
-            .collect();
+        // Adjust threads if needed
+        let pool = ThreadPoolBuilder::new().num_threads(8).build().unwrap(); 
 
-        self.file_cache.insert(drive.to_string(), files);
+        pool.scope(|s| {
+            for entry in walker {
+                let file_cache = Arc::clone(&file_cache);
+                s.spawn(move |_| {
+                    if let Ok(entry) = entry {
+                        if entry.file_type().is_file() {
+                            if let Ok(metadata) = entry.metadata() {
+                                let file_info = FileInfo {
+                                    full_path: entry.path().to_string_lossy().to_string(),
+                                    size_mb: metadata.len() as f64 / MB_TO_BYTES,
+                                    last_modified: metadata.modified().ok().map(system_time_to_string),
+                                    last_accessed: metadata.accessed().ok().map(system_time_to_string),
+                                };
+                                file_cache.lock().unwrap().push(file_info);
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        let final_files = Arc::try_unwrap(file_cache).unwrap().into_inner().unwrap();
+        println!("Scanning complete..");
+        self.file_cache.insert(drive.to_string(), final_files);
+        println!("Caching files..");
         Ok(())
     }
 
@@ -305,12 +324,7 @@ impl StorageAnalyzer {
         println!("\n--- Largest Files ---");
         let files = self.get_largest_files(drive)?;
         for file in files.iter().take(10) {
-            println!("\n[*] Path: {}", file.full_path);
-            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
-            println!("    Last Modified: {}", file.last_modified);
-            if let Some(last_accessed) = &file.last_accessed {
-                println!("    Last Accessed: {}", last_accessed);
-            }
+            Self::print_file_info(file)
         }
         Ok(())
     }
@@ -328,7 +342,7 @@ impl StorageAnalyzer {
         let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
 
         files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
+            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
                 .map(|dt| dt > thirty_days_ago)
                 .unwrap_or(false)
         });
@@ -341,12 +355,7 @@ impl StorageAnalyzer {
         println!("\n--- Recent Large Files ---");
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("\n[*] Path: {}", file.full_path);
-            println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
-            println!("    Last Modified: {}", file.last_modified);
-            if let Some(last_accessed) = &file.last_accessed {
-                println!("    Last Accessed: {}", last_accessed);
-            }
+            Self::print_file_info(file)
         }
         Ok(())
     }
@@ -364,7 +373,7 @@ impl StorageAnalyzer {
         let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
 
         files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified, DATE_FORMAT)
+            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
                 .map(|dt| dt < six_months_ago)
                 .unwrap_or(false)
         });
@@ -377,12 +386,7 @@ impl StorageAnalyzer {
         println!("\n--- Old Large Files (>6 months old) ---");
         let files = self.get_old_large_files(drive)?;
         for file in files.iter().take(10) {
-            println!("\n[*] Path: {}", file.full_path);
-            println!("    Size: {:.2} MB / {:.2}", file.size_mb, file.size_mb/1000.0);
-            println!("    Last Modified: {}", file.last_modified);
-            if let Some(last_accessed) = &file.last_accessed {
-                println!("    Last Accessed: {}", last_accessed);
-            }
+            Self::print_file_info(file)
         }
         Ok(())
     }
