@@ -65,6 +65,7 @@ fn print_command_help(command: &String) {
         }
 }
 
+// TODO - make this and command sorted like the hashset its in, inn help_cmd
 fn print_all_help() {
     // for if I want to sort it alphabetically
     // let mut commands: Vec<_> = COMMAND_DESCRIPTIONS.iter().collect();

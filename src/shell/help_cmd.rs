@@ -15,6 +15,7 @@ lazy_static! {
                 .into_iter()
                 .collect()
         };
+    // make this into what master said to do
         pub static ref COMMAND_DESCRIPTIONS: HashMap<&'static str, CommandInfo> = {
             let mut m = HashMap::new();
             m.insert("help", CommandInfo {
