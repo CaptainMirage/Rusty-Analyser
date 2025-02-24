@@ -109,7 +109,9 @@ pub fn bash_commands() {
                 None => process::exit(0),  // Default exit code if none provided
             },
             ["echo", ..] => match command.get(1..) {
-                Some(words) => println!("{}", words.join(" ")),
+                Some(words) => if words == ["i", "am", "an", "idiot"] {
+                    println!("you are an idiot")
+                } else { println!("{}", words.join(" ")) },
                 None => println!(),  // Just print newline if no arguments given
             },
             ["pwd"] => match env::current_dir() {
