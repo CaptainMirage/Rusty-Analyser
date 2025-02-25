@@ -37,18 +37,18 @@ where
     let drive = drive.to_uppercase();
     
     if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
-        // User entered just the letter (e.g., "C"), format it properly
+        // user entered just the letter (e.g., "C"), format it properly
         if let Err(e) = action(format!("{}:/", drive).as_str()) { 
             eprintln!("Error: {}", e);
         }
     } else if drive.len() == 3 && drive.ends_with(":/") &&
         drive.chars().next().unwrap().is_ascii_alphabetic() {
-        // User entered a valid full path (e.g., "C:/"), use it directly
+        // user entered a valid full path (e.g., "C:/"), use it directly
         if let Err(e) = action(drive.as_str()) {
             eprintln!("Error: {}", e);
         }
     } else {
-        // Invalid input
+        // invalid input
         eprintln!("Invalid drive format. Please enter a single letter (e.g., 'C')\
          or a valid drive path (e.g., 'C:/').");
     }
@@ -65,9 +65,9 @@ fn print_command_help(command: &String) {
         }
 }
 
-// TODO - make this and command sorted like the hashset its in, inn help_cmd
+// TODO - make this and command sorted like the hashset its in, in help_cmd
 fn print_all_help() {
-    // for if I want to sort it alphabetically
+    // for if I want to sort it alphabetically (probably still works, probably) :
     // let mut commands: Vec<_> = COMMAND_DESCRIPTIONS.iter().collect();
     // commands.sort_by_key(|(cmd, _)| *cmd);
 
@@ -76,7 +76,7 @@ fn print_all_help() {
                info.title.bright_white(),
                info.description
         );
-        println!(); // Add an extra newline between commands
+        println!(); // add an extra newline between commands
     }
 }
 
@@ -84,7 +84,7 @@ pub fn bash_commands() {
     
     prompter_fn();
 
-    // Wait for user input
+    // wait for user input
     let stdin = io::stdin();
     let mut input = String::new();
     let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();

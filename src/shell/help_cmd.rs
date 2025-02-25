@@ -4,7 +4,6 @@ use super::{
     types::*
 };
 
-// Define the macro to add a command to the registry
 macro_rules! add_command {
     ($reg:ident, $name:expr, title: $title:expr, description: $desc:expr $(,)?) => {{
         $reg.0.insert($name);
@@ -13,7 +12,7 @@ macro_rules! add_command {
 }
 
 lazy_static! {
-    // Create a tuple containing our built-in command names (HashSet) and command descriptions (HashMap).
+    // Create a tuple containing built-in command names (HashSet) and command descriptions (HashMap).
     static ref COMMANDS: (HashSet<&'static str>, HashMap<&'static str, CommandInfo>) = {
         let mut m = (HashSet::new(), HashMap::new());
 
