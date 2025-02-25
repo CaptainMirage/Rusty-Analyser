@@ -2,7 +2,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::DATE_FORMAT;
 
-// Helper function to convert system time to formatted string
+// helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
     let datetime: DateTime<Utc> = system_time
         .duration_since(UNIX_EPOCH)

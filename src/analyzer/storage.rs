@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use super::{
     constants::*,
     utils::*,
@@ -43,7 +42,7 @@ impl StorageAnalyzer {
     }
 
     // Windows-specific implementation to list fixed drives
-    // Filters for physical drives only, skips USB/network drives
+    // filters for physical drives only, skips USB/network drives
     #[cfg(target_os = "windows")]
     fn list_drives() -> Vec<String> {
         let mut buffer = [0u16; 256];
@@ -67,20 +66,20 @@ impl StorageAnalyzer {
             .collect()
     }
 
-    // Placeholder for non-Windows platforms
+    // placeholder for non-Windows platforms, no bloody idea what to do
     #[cfg(not(target_os = "windows"))]
     fn list_drives() -> Vec<String> {
         Vec::new()
     }
 
-    // Uses Windows API to get drive space information
+    // uses Windows API to get drive space information
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
         use winapi::um::winnt::ULARGE_INTEGER;
         let mut free_bytes_available: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
         let mut total_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
         let mut total_free_bytes: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
 
-        // Convert drive path to wide string for Windows API
+        // convert drive path to wide string for Windows API
         let wide_drive: Vec<u16> = OsStr::new(drive).encode_wide().chain(Some(0)).collect();
 
         let success = unsafe {
@@ -131,13 +130,13 @@ impl StorageAnalyzer {
         let file_cache = Arc::new(Mutex::new(Vec::new()));
         let folder_cache = Arc::new(Mutex::new(Vec::new()));
 
-        // Use WalkDir with max depth (optional) to avoid scanning deeply nested directories
+        // can use WalkDir with max depth to avoid scanning deeply nested directories
         let walker = WalkDir::new(drive)
             .into_iter()
             .filter_map(Result::ok) // Skip errors instead of crashing
             .filter(|e| e.file_type().is_file()); // Process only files
 
-        // Process in parallel using Rayon
+        // process in parallel using Rayon
         let files: Vec<FileInfo> = walker
             .par_bridge() // Enables parallel iteration
             .filter_map(|entry| {
@@ -149,9 +148,8 @@ impl StorageAnalyzer {
                     last_accessed: metadata.accessed().ok().map(system_time_to_string),
                 })
             })
-            .collect(); // Collect all results in one go
-
-        // Cache the files and folders
+            .collect(); // Collect all results in one go (which seems stupid I know)
+        // cache the files
         {
             let mut cache = file_cache.lock().unwrap();
             cache.extend(files);
@@ -166,12 +164,14 @@ impl StorageAnalyzer {
             .filter(|e| e.file_type().is_dir())
             .filter_map(|entry| self.calculate_folder_size(entry.path()).ok())
             .collect();
+        // cache the folders
         {
             let mut cache = folder_cache.lock().unwrap();
             cache.extend(folders);
         }
 
         println!("Scanning complete..");
+        // you might ask why do these separately, well.. you never asked
         self.file_cache.insert(drive.to_string(), Arc::try_unwrap(file_cache).unwrap().into_inner().unwrap());
         self.folder_cache.insert(drive.to_string(), Arc::try_unwrap(folder_cache).unwrap().into_inner().unwrap());
         println!("Caching files and folders..");
@@ -238,7 +238,7 @@ impl StorageAnalyzer {
         }
     }
     
-    // Main analysis function that calls all the other functions below
+    // main analysis function that calls all the other functions for a full scan
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         println!("\n=== Storage Distribution Analysis ===");
         println!("Date: {}", Utc::now().format(DATE_FORMAT));
@@ -270,10 +270,9 @@ impl StorageAnalyzer {
         }
     }
 
-    // Analyzes and returns largest folders up to 3 levels deep
-    // Excludes hidden folders (those starting with '.')
+    // analyzes and returns largest folders up to 3 levels deep
+    // excludes hidden folders (those starting with '.')
     pub fn print_largest_folders(&mut self, drive: &str) -> io::Result<()> {
-        // Check if cache exists and print folder sizes
         if let Some(folders) = self.folder_cache.get(drive) {
             println!("\n--- Largest Folders (Top 10) ---");
             let mut cnt: i8 = 0;
@@ -284,8 +283,8 @@ impl StorageAnalyzer {
                 println!("  Files: {}", folder.file_count);
             }
         } else {
-            self.collect_and_cache_files(drive)?;  // Scan and cache if not found
-            self.print_largest_folders(drive)?;  // Retry after caching
+            self.collect_and_cache_files(drive)?;
+            self.print_largest_folders(drive)?; 
         }
 
         Ok(())
@@ -357,7 +356,7 @@ impl StorageAnalyzer {
         Ok(())
     }
     
-    // Gets recently modified large files (within last 30 days)
+    // gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         self.collect_and_cache_files(drive)?;
 
@@ -388,7 +387,7 @@ impl StorageAnalyzer {
         Ok(())
     }
     
-    // Gets old large files (older than 6 months)
+    // gets old large files (older than 6 months)
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         self.collect_and_cache_files(drive)?;
 
