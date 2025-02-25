@@ -1,10 +1,8 @@
 mod analyzer;
 mod shell;
-use console::Term;
 use crate::analyzer::{
-    constants::*  // Import constants from the module
+    constants::* 
 };
-// Constants can stay here or move to analyzer/constants.rs if you prefer
 
 #[cfg(feature = "DEBUG_MODE")]
 fn debug_test() -> std::io::Result<()> {
@@ -31,10 +29,5 @@ fn main() -> std::io::Result<()> {
     
     // where the main code will run
     shell::bash_commands();
-
-    let term = Term::stdout();
-    println!("\nPress any key to exit...");
-    term.read_char()?;
-
     Ok(())
 }
