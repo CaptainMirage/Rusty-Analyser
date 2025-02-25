@@ -7,17 +7,15 @@ use super::{
 use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
 use rayon::{prelude::*, ThreadPoolBuilder};
 use std::{
-    time::{
-        SystemTime, UNIX_EPOCH},
-    sync::{
-        Arc, Mutex}
-};
-use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     io::{self, Error},
     os::windows::ffi::{OsStrExt, OsStringExt},
     path::Path,
+    time::{
+        SystemTime, UNIX_EPOCH},
+    sync::{
+        Arc, Mutex}
 };
 use walkdir::WalkDir;
 use winapi::um::{
