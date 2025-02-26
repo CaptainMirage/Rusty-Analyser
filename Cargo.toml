@@ -12,6 +12,7 @@ rayon = "1.5"
 lazy_static = "1.5.0"
 colored = "3.0.0"
 whoami = "1.5.2"
+indexmap = "2.7.1"
 
 [features]
 # DEBUG_MODE should be off by default
