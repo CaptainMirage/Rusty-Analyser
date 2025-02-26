@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet};
+use indexmap::IndexMap;
 use super::{
     types::*
 };
@@ -12,9 +13,9 @@ macro_rules! add_command {
 }
 
 lazy_static! {
-    // Create a tuple containing built-in command names (HashSet) and command descriptions (HashMap).
-    static ref COMMANDS: (HashSet<&'static str>, HashMap<&'static str, CommandInfo>) = {
-        let mut m = (HashSet::new(), HashMap::new());
+    // Create a tuple containing built-in command names (HashSet) and ordered command descriptions (IndexMap).
+    static ref COMMANDS: (HashSet<&'static str>, IndexMap<&'static str, CommandInfo>) = {
+        let mut m = (HashSet::new(), IndexMap::new());
 
         add_command!{
           m, "help",
@@ -54,6 +55,11 @@ lazy_static! {
           description: "Shows the distribution of the 10 file formats taking the largest space",
         }
         add_command!{
+          m, "Error-680089",
+          title      : "????????",
+          description: "",
+        }
+        add_command!{
           m, "largest-files",
           title      : "Largest Files",
           description: "Shows the top 10 largest files",
@@ -79,13 +85,8 @@ lazy_static! {
           title      : "Full Drive Analysis",
           description: "cant you read?",
         }
-        add_command!{
-          m, "temp-680089",
-          title      : "????????",
-          description: "",
-        }
         m
     };
     pub static ref BUILTIN_COMMANDS: HashSet<&'static str> = COMMANDS.0.clone();
-    pub static ref COMMAND_DESCRIPTIONS: HashMap<&'static str, CommandInfo> = COMMANDS.1.clone();
+    pub static ref COMMAND_DESCRIPTIONS: IndexMap<&'static str, CommandInfo> = COMMANDS.1.clone();
 }
