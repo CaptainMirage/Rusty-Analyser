@@ -197,50 +197,6 @@ impl StorageAnalyzer {
         }
     }
 
-    // gets recently modified large files (within last 30 days)
-    fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
-
-        let mut files = if let Some(files) = self.file_cache.get(drive) {
-            files.clone()
-        } else {
-            return Ok(Vec::new());
-        };
-
-        let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
-
-        files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
-                .map(|dt| dt > thirty_days_ago)
-                .unwrap_or(false)
-        });
-
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
-    }
-
-    // gets anything older than 6 months
-    fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
-
-        let mut files = if let Some(files) = self.file_cache.get(drive) {
-            files.clone()
-        } else {
-            return Ok(Vec::new());
-        };
-
-        let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
-
-        files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
-                .map(|dt| dt < six_months_ago)
-                .unwrap_or(false)
-        });
-
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
-    }
-
     fn get_largest_folders(&self, drive: &str) -> io::Result<Vec<FolderSize>> {
         if let Some(cached_folders) = self.folder_cache.get(drive) {
             // Use the cached folder sizes, filtering out folders that are too small.
@@ -275,6 +231,50 @@ impl StorageAnalyzer {
             .collect::<Vec<_>>();
         folders.par_sort_unstable_by(|a, b| b.size_gb.partial_cmp(&a.size_gb).unwrap());
         Ok(folders)
+    }
+
+    // gets anything older than 6 months
+    fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
+
+        let mut files = if let Some(files) = self.file_cache.get(drive) {
+            files.clone()
+        } else {
+            return Ok(Vec::new());
+        };
+
+        let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
+
+        files.retain(|file| {
+            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
+                .map(|dt| dt < six_months_ago)
+                .unwrap_or(false)
+        });
+
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
+    }
+
+    // gets recently modified large files (within last 30 days)
+    fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
+
+        let mut files = if let Some(files) = self.file_cache.get(drive) {
+            files.clone()
+        } else {
+            return Ok(Vec::new());
+        };
+
+        let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
+
+        files.retain(|file| {
+            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
+                .map(|dt| dt > thirty_days_ago)
+                .unwrap_or(false)
+        });
+
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
     }
 
     
