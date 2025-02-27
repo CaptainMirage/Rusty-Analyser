@@ -219,7 +219,7 @@ impl StorageAnalyzer {
         Ok(files)
     }
 
-    // gets old large files (older than 6 months)
+    // gets anything older than 6 months
     fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
 
@@ -317,7 +317,7 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    // analyzes and returns largest folders up to 3 levels deep
+    // returns largest folders up to 3 levels deep
     // excludes hidden folders (those starting with '.')
     pub fn print_largest_folders(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Largest Folders (Top 10) ---");
