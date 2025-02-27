@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use super::{
     constants::*,
     utils::*,
@@ -239,6 +238,11 @@ impl StorageAnalyzer {
     
     // main analysis function that calls all the other functions for a full scan
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
+        if !self.drives.contains(&drive.to_string()) {
+            println!("Drive {} is not a valid fixed drive. Valid drives are: {:?}", drive, self.drives);
+            return Ok(());
+        }
+
         println!("\n=== Storage Distribution Analysis ===");
         println!("Date: {}", Utc::now().format(DATE_FORMAT));
         println!("Drive: {}", drive);
@@ -272,18 +276,20 @@ impl StorageAnalyzer {
     // analyzes and returns largest folders up to 3 levels deep
     // excludes hidden folders (those starting with '.')
     pub fn print_largest_folders(&mut self, drive: &str) -> io::Result<()> {
-        if let Some(folders) = self.folder_cache.get(drive) {
-            println!("\n--- Largest Folders (Top 10) ---");
-            let mut cnt: i8 = 0;
-            for folder in folders.iter().take(10) {
-                cnt += 1;
-                println!("\n[{}] {}", cnt, folder.folder);
-                println!("  Size: {:.2} GB", folder.size_gb);
-                println!("  Files: {}", folder.file_count);
-            }
-        } else {
+        println!("\n--- Largest Folders (Top 10) ---");
+        
+        if !self.folder_cache.contains_key(drive) {
             self.collect_and_cache_files(drive)?;
-            self.print_largest_folders(drive)?; 
+        }
+        
+        let folders = self.get_largest_folders(drive)?;
+
+        let mut cnt: i8 = 0;
+        for folder in folders.iter().take(10) {
+            cnt += 1;
+            println!("\n[{}] {}", cnt, folder.folder);
+            println!("  Size: {:.2} GB", folder.size_gb);
+            println!("  Files: {}", folder.file_count);
         }
 
         Ok(())
@@ -302,6 +308,18 @@ impl StorageAnalyzer {
     }
 
     fn get_largest_folders(&self, drive: &str) -> io::Result<Vec<FolderSize>> {
+        if let Some(cached_folders) = self.folder_cache.get(drive) {
+            // Use the cached folder sizes, filtering out folders that are too small.
+            let mut folders: Vec<FolderSize> = cached_folders
+                .iter()
+                .cloned()
+                .filter(|folder| folder.size_gb > MIN_FOLDER_SIZE_GB)
+                .collect();
+            // Sort descending by size.
+            folders.sort_unstable_by(|a, b| b.size_gb.partial_cmp(&a.size_gb).unwrap());
+            return Ok(folders);
+        }
+        // Fallback in the unlikely event the cache is missing.
         let mut folders = WalkDir::new(drive)
             .min_depth(1)
             .max_depth(3)
@@ -321,7 +339,6 @@ impl StorageAnalyzer {
                     .filter(|size| size.size_gb > MIN_FOLDER_SIZE_GB)
             })
             .collect::<Vec<_>>();
-
         folders.par_sort_unstable_by(|a, b| b.size_gb.partial_cmp(&a.size_gb).unwrap());
         Ok(folders)
     }

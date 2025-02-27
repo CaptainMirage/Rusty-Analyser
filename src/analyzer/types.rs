@@ -8,14 +8,14 @@ pub struct DriveAnalysis {
     pub free_space_percent: f64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FolderSize {
     pub folder: String,
     pub size_gb: f64,
     pub file_count: usize,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FileInfo {
     pub full_path: String,
     pub size_mb: f64,
