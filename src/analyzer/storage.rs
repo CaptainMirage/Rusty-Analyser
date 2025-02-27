@@ -22,8 +22,6 @@ use winapi::um::{
     winbase::DRIVE_FIXED,
 };
 
-
-
 pub struct StorageAnalyzer {
     pub drives: Vec<String>,
     file_cache: HashMap<String, Vec<FileInfo>>,
@@ -80,7 +78,7 @@ impl StorageAnalyzer {
         Vec::new()
     }
 
-    // main analysis function that calls all the other functions for a full scan
+    // a fn that calls all the other functions for a full scan
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         if !self.drives.contains(&drive.to_string()) {
             println!("Drive {} is not a valid fixed drive. Valid drives are: {:?}", drive, self.drives);
@@ -101,6 +99,9 @@ impl StorageAnalyzer {
         Ok(())
     }
 
+    
+    // -- private calculation functions -- //
+    
     // uses Windows API to get drive space information
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
         use winapi::um::winnt::ULARGE_INTEGER;
@@ -196,6 +197,50 @@ impl StorageAnalyzer {
         }
     }
 
+    // gets recently modified large files (within last 30 days)
+    fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
+
+        let mut files = if let Some(files) = self.file_cache.get(drive) {
+            files.clone()
+        } else {
+            return Ok(Vec::new());
+        };
+
+        let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
+
+        files.retain(|file| {
+            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
+                .map(|dt| dt > thirty_days_ago)
+                .unwrap_or(false)
+        });
+
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
+    }
+
+    // gets old large files (older than 6 months)
+    fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
+        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
+
+        let mut files = if let Some(files) = self.file_cache.get(drive) {
+            files.clone()
+        } else {
+            return Ok(Vec::new());
+        };
+
+        let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
+
+        files.retain(|file| {
+            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
+                .map(|dt| dt < six_months_ago)
+                .unwrap_or(false)
+        });
+
+        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
+        Ok(files)
+    }
+
     fn get_largest_folders(&self, drive: &str) -> io::Result<Vec<FolderSize>> {
         if let Some(cached_folders) = self.folder_cache.get(drive) {
             // Use the cached folder sizes, filtering out folders that are too small.
@@ -232,50 +277,25 @@ impl StorageAnalyzer {
         Ok(folders)
     }
 
-    // gets recently modified large files (within last 30 days)
-    fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
-
-        let mut files = if let Some(files) = self.file_cache.get(drive) {
-            files.clone()
-        } else {
-            return Ok(Vec::new());
-        };
-
-        let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
-
-        files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
-                .map(|dt| dt > thirty_days_ago)
-                .unwrap_or(false)
-        });
-
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
-    }
-   
-    // gets old large files (older than 6 months)
-    fn get_old_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
-        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
-
-        let mut files = if let Some(files) = self.file_cache.get(drive) {
-            files.clone()
-        } else {
-            return Ok(Vec::new());
-        };
-
-        let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
-
-        files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
-                .map(|dt| dt < six_months_ago)
-                .unwrap_or(false)
-        });
-
-        files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
-        Ok(files)
-    }
     
+    // -- public printing functions -- // 
+    
+    pub fn print_drive_space_overview(&self, drive: &str) -> io::Result<()> {
+        match self.get_drive_space(drive) {
+            Ok(analysis) => {
+                println!("\n--- Drive Space Overview ---");
+                println!("Total Size: {:.2} GB", analysis.total_size);
+                println!("Used Space: {:.2} GB", analysis.used_space);
+                println!("Free Space: {:.2} GB ({:.2}%)", analysis.free_space, analysis.free_space_percent);
+                Ok(())
+            }
+            Err(e) => {
+                eprintln!("Failed to analyze drive '{}': {}", drive, e);
+                Err(e)
+            }
+        }
+    }
+
     pub fn print_file_type_distribution(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- File Type Distribution (Top 10) ---");
         let distribution = self.get_file_type_distribution(drive)?;
@@ -291,15 +311,6 @@ impl StorageAnalyzer {
     pub fn print_largest_files(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Largest Files ---");
         let files = self.get_largest_files(drive)?;
-        for file in files.iter().take(10) {
-            Self::print_file_info(file)
-        }
-        Ok(())
-    }
-
-    pub fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
-        println!("\n--- Recent Large Files ---");
-        let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
             Self::print_file_info(file)
         }
@@ -328,25 +339,18 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    pub fn print_drive_space_overview(&self, drive: &str) -> io::Result<()> {
-        match self.get_drive_space(drive) {
-            Ok(analysis) => {
-                println!("\n--- Drive Space Overview ---");
-                println!("Total Size: {:.2} GB", analysis.total_size);
-                println!("Used Space: {:.2} GB", analysis.used_space);
-                println!("Free Space: {:.2} GB ({:.2}%)", analysis.free_space, analysis.free_space_percent);
-                Ok(())
-            }
-            Err(e) => {
-                eprintln!("Failed to analyze drive '{}': {}", drive, e);
-                Err(e)
-            }
-        }
-    }
-
     pub fn print_old_large_files(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Old Large Files (>6 months old) ---");
         let files = self.get_old_large_files(drive)?;
+        for file in files.iter().take(10) {
+            Self::print_file_info(file)
+        }
+        Ok(())
+    }
+
+    pub fn print_recent_large_files(&mut self, drive: &str) -> io::Result<()> {
+        println!("\n--- Recent Large Files ---");
+        let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
             Self::print_file_info(file)
         }
