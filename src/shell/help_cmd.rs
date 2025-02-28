@@ -85,6 +85,11 @@ lazy_static! {
           title      : "Full Drive Analysis",
           description: "cant you read?",
         }
+        add_command!{
+            m, "empty-folders",
+            title: "Empty Folders",
+            description: "empty folders?"
+        }
         m
     };
     pub static ref BUILTIN_COMMANDS: HashSet<&'static str> = COMMANDS.0.clone();
