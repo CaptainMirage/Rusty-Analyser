@@ -276,6 +276,8 @@ impl StorageAnalyzer {
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
     }
+    
+    // gets empty folders
 
     
     // -- public printing functions -- // 
