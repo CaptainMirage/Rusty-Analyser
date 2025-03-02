@@ -21,9 +21,9 @@ fn prompter_fn() {
     let _host: String = fallible::hostname().unwrap();
     let prompt: String = format!(
         "\n{}{}{}\n{} ",
-        "user".green(),
+        _user.green(),
         "@".white(),
-        "host".blue(),
+        _host.blue(),
         "$".cyan()
     );
     print!("{}", prompt);
