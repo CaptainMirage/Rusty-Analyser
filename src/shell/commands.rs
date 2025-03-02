@@ -164,6 +164,18 @@ pub fn bash_commands() {
                     (drive, |d| analyzer.analyze_drive(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
             }
+
+            ["empty-folders", ..] => {
+                if command.contains(&"-delete".to_string()) {
+                    // placeholder for later implementation
+                    println!("Deletion functionality for empty folders is not yet implemented.");
+                } else {
+                    match command.get(1) {
+                        Some(drive) => validate_and_format_drive(drive, |d| analyzer.print_empty_folders(d)),
+                        None => println!("No drive provided for empty-folders command."),
+                    }
+                }
+            }
             
             _ => {
                 println!("{}: not found", command[0]);
