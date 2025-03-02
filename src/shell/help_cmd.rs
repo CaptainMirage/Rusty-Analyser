@@ -88,7 +88,9 @@ lazy_static! {
         add_command!{
             m, "empty-folders",
             title: "Empty Folders",
-            description: "empty folders?"
+            description: "searches for empty folders and lists them all\
+                          (not all empty folders should be deleted) \n\
+                          if you're not sure just search the folder path and see if you can delete it"
         }
         m
     };
