@@ -277,7 +277,22 @@ impl StorageAnalyzer {
         Ok(files)
     }
     
-    // gets empty folders
+    pub fn get_empty_folders(&self, drive: &str) -> io::Result<Vec<String>> {
+        let empty_folders: Vec<String> = WalkDir::new(drive)
+            .min_depth(1)
+            .into_iter()
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry.file_type().is_dir() &&
+                    // check if the directory has no entries
+                    std::fs::read_dir(entry.path())
+                        .map(|mut iter| iter.next().is_none())
+                        .unwrap_or(false)
+            })
+            .map(|entry| entry.path().to_string_lossy().into_owned())
+            .collect();
+        Ok(empty_folders)
+    }
 
     
     // -- public printing functions -- // 
@@ -355,6 +370,16 @@ impl StorageAnalyzer {
         let files = self.get_recent_large_files(drive)?;
         for file in files.iter().take(10) {
             Self::print_file_info(file)
+        }
+        Ok(())
+    }
+    
+    pub fn print_empty_folders(&self, drive: &str) -> io::Result<()> {
+        println!("\n--- Empty Folders ---");
+        let empty_folders = self.get_empty_folders(drive)?;
+        println!("Found {} empty folders.", empty_folders.len());
+        for folder in empty_folders.iter() {
+            println!(" - {}", folder);
         }
         Ok(())
     }
