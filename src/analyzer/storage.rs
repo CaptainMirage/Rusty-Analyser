@@ -276,22 +276,22 @@ impl StorageAnalyzer {
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
     }
-    
-    pub fn get_empty_folders(&self, drive: &str) -> io::Result<Vec<String>> {
-        let empty_folders: Vec<String> = WalkDir::new(drive)
-            .min_depth(1)
-            .into_iter()
-            .filter_map(|entry| entry.ok())
-            .filter(|entry| {
-                entry.file_type().is_dir() &&
-                    // check if the directory has no entries
-                    std::fs::read_dir(entry.path())
-                        .map(|mut iter| iter.next().is_none())
-                        .unwrap_or(false)
-            })
-            .map(|entry| entry.path().to_string_lossy().into_owned())
-            .collect();
-        Ok(empty_folders)
+
+    pub fn get_empty_folders(&mut self, drive: &str) -> io::Result<Vec<String>> {
+        // Use the cache; if already scanned, this call will quickly return.
+        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
+
+        // Use the cached folder data if available, filtering for folders with 0 files.
+        if let Some(cached_folders) = self.folder_cache.get(drive) {
+            let empty_folders: Vec<String> = cached_folders
+                .iter()
+                .filter(|folder| folder.file_count == 0)
+                .map(|folder| folder.folder.clone())
+                .collect();
+            Ok(empty_folders)
+        } else {
+            Ok(vec![])
+        }
     }
 
     
@@ -374,7 +374,7 @@ impl StorageAnalyzer {
         Ok(())
     }
     
-    pub fn print_empty_folders(&self, drive: &str) -> io::Result<()> {
+    pub fn print_empty_folders(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Empty Folders ---");
         let empty_folders = self.get_empty_folders(drive)?;
         println!("Found {} empty folders.", empty_folders.len());
