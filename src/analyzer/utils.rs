@@ -1,13 +1,17 @@
 use chrono::{DateTime, TimeZone, Utc};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    fs::{create_dir_all, OpenOptions},
+    time::{SystemTime, UNIX_EPOCH}
+};
 use crate::DATE_FORMAT;
-use std::{collections::HashMap, io, path::Path, sync::{Arc, Mutex}};
+use std::{collections::HashMap, io, io::Write, path::Path, sync::{Arc, Mutex}};
 use rayon::prelude::*;
 use walkdir::WalkDir;
 use super::{
     constants::*,
     types::*
 };
+
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
@@ -36,6 +40,37 @@ pub fn calculate_folder_size(path: &Path) -> io::Result<FolderSize> {
         size_gb: total_size as f64 / GB_TO_BYTES,
         file_count: files.len(),
     })
+}
+
+pub fn save_empty_folders_to_file(empty_folders: &[String]) -> io::Result<()> {
+    // Ensure the outputs folder exists.
+    let output_dir = Path::new("outputs");
+    if !output_dir.exists() {
+        create_dir_all(output_dir)?;
+        println!("Created outputs directory.");
+    } else {
+        println!("Outputs directory already exists.");
+    }
+
+    // Define the output file path.
+    let report_file_path = output_dir.join("EmptyFolderReport.txt");
+
+    // Open the file in write mode
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&report_file_path)?;
+
+    // Write the report header and the empty folders list.
+    writeln!(file, "Empty Folders Report:")?;
+    writeln!(file, "Found {} empty folders.", empty_folders.len())?;
+    for folder in empty_folders {
+        writeln!(file, " - {}", folder)?;
+    }
+
+    println!("Saved empty folders report to: {}", report_file_path.display());
+    Ok(())
 }
 
 pub fn collect_and_cache_files(
