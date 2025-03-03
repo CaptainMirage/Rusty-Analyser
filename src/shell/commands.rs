@@ -5,6 +5,7 @@ use crate::analyzer::{
 use super::{
     help_cmd::*
 };
+use crate::analyzer::utils;
 use std::{
     env,
     io::{self, Write},
@@ -171,11 +172,22 @@ pub fn bash_commands() {
                     println!("Deletion functionality for empty folders is not yet implemented.");
                 } else {
                     match command.get(1) {
-                        Some(drive) => validate_and_format_drive(drive, |d| analyzer.print_empty_folders(d)),
+                        Some(drive) => validate_and_format_drive(drive, |d| {
+                            let mut analyzer = StorageAnalyzer::new();
+                            let empty_folders = analyzer.get_empty_folders(d)?;
+                            println!("Found {} empty folders.", empty_folders.len());
+                            for folder in &empty_folders {
+                                println!(" - {}", folder);
+                            }
+                            // Now save the empty folders to file
+                            utils::save_empty_folders_to_file(&empty_folders)?;
+                            Ok(())
+                        }),
                         None => println!("No drive provided for empty-folders command."),
                     }
                 }
             }
+
             
             _ => {
                 println!("{}: not found", command[0]);
