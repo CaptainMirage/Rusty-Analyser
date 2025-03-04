@@ -43,7 +43,7 @@ pub fn calculate_folder_size(path: &Path) -> io::Result<FolderSize> {
 }
 
 pub fn save_empty_folders_to_file(empty_folders: &[String]) -> io::Result<()> {
-    // Ensure the outputs folder exists.
+    // ensure the outputs folder exists.
     let output_dir = Path::new("outputs");
     if !output_dir.exists() {
         create_dir_all(output_dir)?;
@@ -52,17 +52,17 @@ pub fn save_empty_folders_to_file(empty_folders: &[String]) -> io::Result<()> {
         println!("Outputs directory already exists.");
     }
 
-    // Define the output file path.
+    // define the output file path.
     let report_file_path = output_dir.join("EmptyFolderReport.txt");
 
-    // Open the file in write mode
+    // open the file in write mode
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
         .open(&report_file_path)?;
 
-    // Write the report header and the empty folders list.
+    // write the report header and the empty folders list.
     writeln!(file, "Empty Folders Report:")?;
     writeln!(file, "Found {} empty folders.", empty_folders.len())?;
     for folder in empty_folders {
