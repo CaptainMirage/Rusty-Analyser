@@ -179,8 +179,7 @@ pub fn bash_commands() {
                             for folder in &empty_folders {
                                 println!(" - {}", folder);
                             }
-                            // Now save the empty folders to file
-                            utils::save_empty_folders_to_file(&empty_folders)?;
+                            utils::save_empty_folders_to_file(&empty_folders)?; // saves the stuff
                             Ok(())
                         }),
                         None => println!("No drive provided for empty-folders command."),

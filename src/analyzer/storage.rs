@@ -258,30 +258,26 @@ impl StorageAnalyzer {
     // gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
-
+        
         let mut files = if let Some(files) = self.file_cache.get(drive) {
             files.clone()
         } else {
             return Ok(Vec::new());
         };
-
         let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
-
         files.retain(|file| {
             NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
                 .map(|dt| dt > thirty_days_ago)
                 .unwrap_or(false)
         });
-
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
     }
 
     pub fn get_empty_folders(&mut self, drive: &str) -> io::Result<Vec<String>> {
-        // Use the cache; if already scanned, this call will quickly return.
         collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
 
-        // Use the cached folder data if available, filtering for folders with 0 files.
+        // filtering for folders with 0 files.
         if let Some(cached_folders) = self.folder_cache.get(drive) {
             let empty_folders: Vec<String> = cached_folders
                 .iter()
