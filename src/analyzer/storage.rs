@@ -78,7 +78,7 @@ impl StorageAnalyzer {
         Vec::new()
     }
 
-    // a fn that calls all the other functions for a full scan
+    // a full scan fn that calls all other ones
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         if !self.drives.contains(&drive.to_string()) {
             println!("Drive {} is not a valid fixed drive. Valid drives are: {:?}", drive, self.drives);
