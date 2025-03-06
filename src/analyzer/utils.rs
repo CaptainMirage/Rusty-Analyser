@@ -154,13 +154,19 @@ pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natu
         let mut char_delay = base_speed_ms;
 
         if natural {
-            // Add slight randomness to typing speed
-            let variation = rng.random_range(0..=30);
-            char_delay = char_delay.saturating_add(variation);
+            // Add slight randomness to typing speed (using positive range and subtracting after)
+            let variation = rng.random_range(0..=40);
+            if variation <= 10 {
+                // Subtract up to 10ms (similar to -10..=xx range which cant be normally)
+                char_delay = char_delay.saturating_sub(variation);
+            } else {
+                // Add up to 20ms for the remaining range
+                char_delay = char_delay.saturating_add(variation - 10);
+            }
 
             // Add natural pauses after certain punctuation
             if pause_chars.contains(&prev_char) {
-                char_delay = char_delay.saturating_add(rng.random_range(100..300));
+                char_delay = char_delay.saturating_add(rng.random_range(100..400));
             }
 
             // Simulate faster typing for common character sequences
@@ -186,7 +192,7 @@ pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natu
     sleep(Duration::from_millis(delay));
 }
 
-/// Simplified version of type_text with default parameters
+// simplified version of type_text with default parameters
 pub fn type_text_simple(text: &str, speed_ms: u64) {
     type_text(text, speed_ms, Some(500), true);
 }
