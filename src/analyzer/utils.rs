@@ -14,6 +14,7 @@ use super::{
 use std::thread::sleep;
 use std::time::Duration;
 use std::{io::{stdout}};
+use rand::Rng;
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
@@ -134,14 +135,47 @@ pub fn collect_and_cache_files(
     Ok(())
 }
 
-pub fn type_text(text: &str, speed_ms: u64, end_delay_ms: Option<u64>) {
+pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natural: bool) {
     let stdout = stdout();
     let mut handle = stdout.lock();
+    let mut rng = rand::rng();
+
+    // Characters that typically cause a slight natural pause when typing
+    let pause_chars = ['.', '!', '?', ',', ';', ':', '-', ')', '}', ']'];
+
+    let mut prev_char = ' ';
 
     for c in text.chars() {
+        // Write the current character
         write!(handle, "{}", c).unwrap();
         handle.flush().unwrap();
-        sleep(Duration::from_millis(speed_ms));
+
+        // Calculate delay for this character
+        let mut char_delay = base_speed_ms;
+
+        if natural {
+            // Add slight randomness to typing speed
+            let variation = rng.random_range(0..=30);
+            char_delay = char_delay.saturating_add(variation);
+
+            // Add natural pauses after certain punctuation
+            if pause_chars.contains(&prev_char) {
+                char_delay = char_delay.saturating_add(rng.random_range(100..300));
+            }
+
+            // Simulate faster typing for common character sequences
+            if (prev_char == 't' && c == 'h') ||
+                (prev_char == 'i' && c == 'n') ||
+                (prev_char == 'a' && c == 'n') {
+                char_delay = char_delay.saturating_sub(10);
+            }
+        }
+
+        // Sleep for the calculated delay
+        sleep(Duration::from_millis(char_delay));
+
+        // Remember this character for next iteration
+        prev_char = c;
     }
 
     // Add a newline at the end
@@ -150,4 +184,9 @@ pub fn type_text(text: &str, speed_ms: u64, end_delay_ms: Option<u64>) {
     // Apply the end delay (default to 500ms if None provided)
     let delay = end_delay_ms.unwrap_or(500);
     sleep(Duration::from_millis(delay));
+}
+
+/// Simplified version of type_text with default parameters
+pub fn type_text_simple(text: &str, speed_ms: u64) {
+    type_text(text, speed_ms, Some(500), true);
 }
