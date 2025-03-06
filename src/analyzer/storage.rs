@@ -91,6 +91,7 @@ impl StorageAnalyzer {
 
         self.print_drive_space_overview(drive)?;
         self.print_largest_folders(drive)?;
+        self.print_empty_folders(drive)?;
         self.print_file_type_distribution(drive)?;
         self.print_largest_files(drive)?;
         self.print_recent_large_files(drive)?;
