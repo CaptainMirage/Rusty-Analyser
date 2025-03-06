@@ -11,7 +11,9 @@ use super::{
     constants::*,
     types::*
 };
-
+use std::thread::sleep;
+use std::time::Duration;
+use std::{io::{stdout}};
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
@@ -130,4 +132,22 @@ pub fn collect_and_cache_files(
     println!("Caching files and folders..");
 
     Ok(())
+}
+
+pub fn type_text(text: &str, speed_ms: u64, end_delay_ms: Option<u64>) {
+    let stdout = stdout();
+    let mut handle = stdout.lock();
+
+    for c in text.chars() {
+        write!(handle, "{}", c).unwrap();
+        handle.flush().unwrap();
+        sleep(Duration::from_millis(speed_ms));
+    }
+
+    // Add a newline at the end
+    writeln!(handle).unwrap();
+
+    // Apply the end delay (default to 500ms if None provided)
+    let delay = end_delay_ms.unwrap_or(500);
+    sleep(Duration::from_millis(delay));
 }
