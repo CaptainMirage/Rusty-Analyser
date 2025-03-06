@@ -196,3 +196,34 @@ pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natu
 pub fn type_text_simple(text: &str, speed_ms: u64) {
     type_text(text, speed_ms, Some(500), true);
 }
+
+pub fn tester_function() {
+    // Natural typing effect with default end delay
+    type_text(
+        "Hello, this is a demonstration of the natural typing effect! It mimics how a real person would type.",
+        70,
+        None,
+        true
+    );
+
+    // Using the simplified function for quick usage
+    println!("\nUsing the simplified function:");
+    type_text_simple("This uses the simplified function with natural typing.", 70);
+
+    // Compare natural vs mechanical typing
+    println!("\nNatural typing (with randomness and pauses):");
+    type_text(
+        "The quick brown fox jumps over the lazy dog. How natural does this feel?",
+        60,
+        Some(700),
+        true
+    );
+
+    println!("\nMechanical typing (constant speed):");
+    type_text(
+        "The quick brown fox jumps over the lazy dog. Notice the difference?",
+        60,
+        Some(700),
+        false
+    );
+}
