@@ -2,7 +2,7 @@ mod analyzer;
 mod shell;
 use crate::analyzer::{
     constants::*,
-    utils::{type_text}
+    //utils::{type_text}
 };
 
 #[cfg(feature = "DEBUG_MODE")]
