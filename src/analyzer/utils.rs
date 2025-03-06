@@ -135,7 +135,9 @@ pub fn collect_and_cache_files(
     Ok(())
 }
 
-pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natural: bool) {
+pub fn type_text(
+    text: &str, base_speed_ms: u64,
+    end_delay_ms: Option<u64>, natural: bool) {
     let stdout = stdout();
     let mut handle = stdout.lock();
     let mut rng = rand::rng();
@@ -155,7 +157,7 @@ pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natu
 
         if natural {
             // add slight randomness to typing speed (using positive range and subtracting after)
-            let variation = rng.random_range(0..=40);
+            let variation = rng.random_range(0..=30);
             if variation <= 10 {
                 // subtract up to 10ms (similar to -10..=xx range which cant be normally)
                 char_delay = char_delay.saturating_sub(variation);
