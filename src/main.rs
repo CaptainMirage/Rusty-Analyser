@@ -1,7 +1,8 @@
 mod analyzer;
 mod shell;
 use crate::analyzer::{
-    constants::* 
+    constants::*,
+    utils::{type_text}
 };
 
 #[cfg(feature = "DEBUG_MODE")]
@@ -28,6 +29,13 @@ fn main() -> std::io::Result<()> {
     }
     
     // where the main code will run
+    /*
+        type_text(
+        "", 60,
+        Some(700),
+        true
+    );
+     */
     shell::bash_commands();
     Ok(())
 }
