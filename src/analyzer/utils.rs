@@ -140,36 +140,36 @@ pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natu
     let mut handle = stdout.lock();
     let mut rng = rand::rng();
 
-    // Characters that typically cause a slight natural pause when typing
+    // characters that typically cause a slight natural pause when typing
     let pause_chars = ['.', '!', '?', ',', ';', ':', '-', ')', '}', ']'];
 
     let mut prev_char = ' ';
 
     for c in text.chars() {
-        // Write the current character
+        // write the current character
         write!(handle, "{}", c).unwrap();
         handle.flush().unwrap();
 
-        // Calculate delay for this character
+        // calculate delay for this character
         let mut char_delay = base_speed_ms;
 
         if natural {
-            // Add slight randomness to typing speed (using positive range and subtracting after)
+            // add slight randomness to typing speed (using positive range and subtracting after)
             let variation = rng.random_range(0..=40);
             if variation <= 10 {
-                // Subtract up to 10ms (similar to -10..=xx range which cant be normally)
+                // subtract up to 10ms (similar to -10..=xx range which cant be normally)
                 char_delay = char_delay.saturating_sub(variation);
             } else {
-                // Add up to 20ms for the remaining range
+                // add up to 20ms for the remaining range
                 char_delay = char_delay.saturating_add(variation - 10);
             }
 
-            // Add natural pauses after certain punctuation
+            // add natural pauses after certain punctuation
             if pause_chars.contains(&prev_char) {
                 char_delay = char_delay.saturating_add(rng.random_range(100..400));
             }
 
-            // Simulate faster typing for common character sequences
+            // simulate faster typing for common character sequences
             if (prev_char == 't' && c == 'h') ||
                 (prev_char == 'i' && c == 'n') ||
                 (prev_char == 'a' && c == 'n') {
@@ -177,17 +177,17 @@ pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natu
             }
         }
 
-        // Sleep for the calculated delay
+        // sleep for the calculated delay
         sleep(Duration::from_millis(char_delay));
 
-        // Remember this character for next iteration
+        // remember this character for next iteration
         prev_char = c;
     }
 
-    // Add a newline at the end
+    // add a newline at the end
     writeln!(handle).unwrap();
 
-    // Apply the end delay (default to 500ms if None provided)
+    // apply the end delay (default to 500ms if None provided)
     let delay = end_delay_ms.unwrap_or(500);
     sleep(Duration::from_millis(delay));
 }
