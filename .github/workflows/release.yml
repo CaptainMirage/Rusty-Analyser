@@ -17,28 +17,27 @@ jobs:
       # 2. Verify GitHub CLI is available (optional)
       - name: Check GitHub CLI version
         run: gh --version
-        shell: bash
+        shell: pwsh
 
       # 3. Build your Rust project for Windows (MSVC target)
       - name: Build binary
         run: cargo build --release --target=x86_64-pc-windows-msvc
-        shell: bash
+        shell: pwsh
 
-      # 4. Package your binary into a zip file
+      # 4. Package your binary into a zip file using PowerShell
       - name: Package binary
+        shell: pwsh
         run: |
-          mkdir release
-          cp target/x86_64-pc-windows-msvc/release/Rusty-Analyser.exe release/
-          cd release
-          zip Rusty-Analyser.zip Rusty-Analyser.exe
-        shell: bash
+          New-Item -ItemType Directory -Force -Path release
+          Copy-Item -Path "target/x86_64-pc-windows-msvc/release/Rusty-Analyser.exe" -Destination release/
+          Compress-Archive -Path "release\Rusty-Analyser.exe" -DestinationPath "release\Rusty-Analyser.zip" -Force
 
       # 5. Create a GitHub release and upload the asset using GitHub CLI
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
         run: |
-          gh release create "${{ github.ref_name }}" release/Rusty-Analyser.zip \
-            --title "Release ${{ github.ref_name }}" \
+          gh release create "${{ github.ref_name }}" release\Rusty-Analyser.zip `
+            --title "Release ${{ github.ref_name }}" `
             --notes "Automated release for tag ${{ github.ref_name }}"
-        shell: bash
