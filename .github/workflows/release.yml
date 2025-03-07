@@ -3,7 +3,7 @@ name: Release with GitHub CLI
 on:
   push:
     tags:
-      - "v*"
+      - "v*" # git tag vx.x.x
 
 jobs:
   release:
