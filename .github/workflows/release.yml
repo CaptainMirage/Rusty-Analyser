@@ -36,8 +36,8 @@ jobs:
           Copy-Item -Path "target/x86_64-pc-windows-msvc/release/Rusty-Analyser.exe" -Destination release/
           Compress-Archive -Path "release\Rusty-Analyser.exe" -DestinationPath "release\Rusty-Analyser.zip" -Force
 
-      # 5. Generate changelog and create release notes
-      - name: Generate Changelog and Release Notes
+      # 5. Use local release notes file and create release
+      - name: Create Release with Local Notes File
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
@@ -47,47 +47,57 @@ jobs:
             $tagName = $env:GITHUB_REF.Substring(10)  # Remove 'refs/tags/' prefix
             $previousTag = $(gh api repos/${{ github.repository }}/tags --jq '.[1].name' 2>$null)
           
-            # Create a notes file
+            # Path to your release notes file - CHANGE THIS to your actual file path
             $notesFile = "RELEASE_NOTES.md"
           
-            # Check if CHANGELOG.md exists in the project
-            if (Test-Path -Path "CHANGELOG.md") {
-              Write-Host "Using existing CHANGELOG.md file"
-              Get-Content -Path "CHANGELOG.md" | Out-File -FilePath $notesFile
-            } else {
-              # Generate changelog content based on commits
-              Write-Host "Generating changelog from commits"
+            # Check if your release notes file exists
+            if (Test-Path -Path $notesFile) {
+              Write-Host "Using existing release notes file: $notesFile"
           
-              "# Release $tagName`n" | Out-File -FilePath $notesFile
+              # Get the content of the release notes file
+              $notesContent = Get-Content -Path $notesFile -Raw
+          
+              # Add the full changelog link in the exact format requested
+              if ($previousTag) {
+                $changelogLink = "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$previousTag...$tagName"
+          
+                # Create a temporary file with both the notes and the changelog link
+                $tempNotesFile = "TEMP_NOTES.md"
+                $notesContent | Out-File -FilePath $tempNotesFile
+                "`n`n$changelogLink" | Add-Content -FilePath $tempNotesFile
+          
+                # Display generated notes
+                Write-Host "Release notes content:"
+                Get-Content -Path $tempNotesFile
+          
+                # Create the release with the notes
+                gh release create "$tagName" "release\Rusty-Analyser.zip" `
+                  --title "Release $tagName" `
+                  --notes-file $tempNotesFile
+              } else {
+                # If no previous tag, just use the notes file as is
+                gh release create "$tagName" "release\Rusty-Analyser.zip" `
+                  --title "Release $tagName" `
+                  --notes-file $notesFile
+              }
+            } else {
+              Write-Host "Warning: Release notes file not found at $notesFile"
+              Write-Host "Creating release with basic notes"
+          
+              # Create a basic notes file if yours doesn't exist
+              $basicNotesFile = "BASIC_NOTES.md"
+              "Release $tagName" | Out-File -FilePath $basicNotesFile
           
               if ($previousTag) {
-                "## Changes since $previousTag`n" | Add-Content -Path $notesFile
-          
-                # Get commits between tags and format them
-                gh api repos/${{ github.repository }}/compare/$previousTag...$tagName --jq '.commits[] | "- " + .commit.message' | 
-                  ForEach-Object { $_ -replace '\n.*', '' } |  # Keep only the first line of each commit message
-                  Add-Content -Path $notesFile
-          
-                # Add comparison link
-                "`n[Full Changelog](https://github.com/${{ github.repository }}/compare/$previousTag...$tagName)" | 
-                  Add-Content -Path $notesFile
-              } else {
-                "## Initial Release`n" | Add-Content -Path $notesFile
-                gh api repos/${{ github.repository }}/commits --jq '.[] | "- " + .commit.message' | 
-                  ForEach-Object { $_ -replace '\n.*', '' } |  # Keep only the first line of each commit message
-                  Select-Object -First 10 |  # Limit to first 10 commits
-                  Add-Content -Path $notesFile
+                "`n`n**Full Changelog**: https://github.com/${{ github.repository }}/compare/$previousTag...$tagName" | 
+                  Add-Content -FilePath $basicNotesFile
               }
+          
+              # Create the release with basic notes
+              gh release create "$tagName" "release\Rusty-Analyser.zip" `
+                --title "Release $tagName" `
+                --notes-file $basicNotesFile
             }
-
-            # Display generated notes
-            Write-Host "Release notes content:"
-            Get-Content -Path $notesFile
-
-            # Create the release with the generated notes
-            gh release create "$tagName" "release\Rusty-Analyser.zip" `
-              --title "TEST RELEASE" `
-              --notes-file $notesFile
           } else {
             Write-Host "Not a tag push, skipping release creation."
           }
