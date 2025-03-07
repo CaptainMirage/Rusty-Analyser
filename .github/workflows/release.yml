@@ -6,6 +6,10 @@ on:
     tags:
       - "v*"  # Triggers when a tag starting with "v" is pushed
 
+# Add permissions section here
+permissions:
+  contents: write  # This gives permission to create releases and upload assets
+
 jobs:
   release:
     runs-on: windows-latest
@@ -38,6 +42,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          gh release create "${{ github.ref_name }}" release\Rusty-Analyser.zip `
-            --title "Release ${{ github.ref_name }}" `
-            --notes "Automated release for tag ${{ github.ref_name }}"
+          # Only create a release if we're triggered by a tag
+          if ($env:GITHUB_REF.StartsWith('refs/tags/')) {
+            $tagName = $env:GITHUB_REF.Substring(10)  # Remove 'refs/tags/' prefix
+            gh release create "$tagName" "release\Rusty-Analyser.zip" `
+              --title "Release $tagName" `
+              --notes "Automated release for tag $tagName"
+          } else {
+            Write-Host "Not a tag push, skipping release creation."
+          }
