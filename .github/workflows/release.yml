@@ -1,0 +1,38 @@
+name: Release with GitHub CLI
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout your repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Build your Rust project
+      - name: Build binary
+        run: cargo build --release
+
+      # 3. Package your binary (optional)
+      # Adjust the binary name as needed.
+      - name: Package binary
+        run: |
+          mkdir release
+          cp target/release/Rusty-Analyser release/
+          cd release
+          zip Rusty-Analyser.zip Rusty-Analyser
+
+      # 4. Create a release and upload asset using GitHub CLI
+      # The GitHub CLI (gh) is pre-installed on ubuntu-latest runners.
+      - name: Create Release and Upload Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Use github.ref_name to get the tag name without the 'refs/tags/' prefix.
+          gh release create "${{ github.ref_name }}" release/your_binary_name.zip \
+            --title "Release ${{ github.ref_name }}" \
+            --notes "Automated release for tag ${{ github.ref_name }}"
