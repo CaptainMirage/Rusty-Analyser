@@ -1,9 +1,9 @@
 mod analyzer;
 mod shell;
-//use crate::analyzer::utils::tester_function;
+// use crate::analyzer::utils::tester_function;
 use crate::analyzer::{
     constants::*,
-    //utils::{type_text}
+    // utils::{type_text}
 };
 
 
@@ -31,13 +31,7 @@ fn main() -> std::io::Result<()> {
     }
     
     // where the main code will run
-    /*
-        type_text(
-        "", 60,
-        Some(700),
-        true
-    );
-     */
+
     shell::bash_commands();
     Ok(())
 }
