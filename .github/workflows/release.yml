@@ -38,6 +38,8 @@ jobs:
 
       # 5. Generate changelog and create release notes
       - name: Generate Changelog and Release Notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
           # Only create a release if we're triggered by a tag
