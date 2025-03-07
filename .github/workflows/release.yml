@@ -36,18 +36,56 @@ jobs:
           Copy-Item -Path "target/x86_64-pc-windows-msvc/release/Rusty-Analyser.exe" -Destination release/
           Compress-Archive -Path "release\Rusty-Analyser.exe" -DestinationPath "release\Rusty-Analyser.zip" -Force
 
-      # 5. Create a GitHub release and upload the asset using GitHub CLI
-      - name: Create Release and Upload Asset
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 5. Generate changelog and create release notes
+      - name: Generate Changelog and Release Notes
         shell: pwsh
         run: |
           # Only create a release if we're triggered by a tag
           if ($env:GITHUB_REF.StartsWith('refs/tags/')) {
             $tagName = $env:GITHUB_REF.Substring(10)  # Remove 'refs/tags/' prefix
+            $previousTag = $(gh api repos/${{ github.repository }}/tags --jq '.[1].name' 2>$null)
+          
+            # Create a notes file
+            $notesFile = "RELEASE_NOTES.md"
+          
+            # Check if CHANGELOG.md exists in the project
+            if (Test-Path -Path "CHANGELOG.md") {
+              Write-Host "Using existing CHANGELOG.md file"
+              Get-Content -Path "CHANGELOG.md" | Out-File -FilePath $notesFile
+            } else {
+              # Generate changelog content based on commits
+              Write-Host "Generating changelog from commits"
+          
+              "# Release $tagName`n" | Out-File -FilePath $notesFile
+          
+              if ($previousTag) {
+                "## Changes since $previousTag`n" | Add-Content -Path $notesFile
+          
+                # Get commits between tags and format them
+                gh api repos/${{ github.repository }}/compare/$previousTag...$tagName --jq '.commits[] | "- " + .commit.message' | 
+                  ForEach-Object { $_ -replace '\n.*', '' } |  # Keep only the first line of each commit message
+                  Add-Content -Path $notesFile
+          
+                # Add comparison link
+                "`n[Full Changelog](https://github.com/${{ github.repository }}/compare/$previousTag...$tagName)" | 
+                  Add-Content -Path $notesFile
+              } else {
+                "## Initial Release`n" | Add-Content -Path $notesFile
+                gh api repos/${{ github.repository }}/commits --jq '.[] | "- " + .commit.message' | 
+                  ForEach-Object { $_ -replace '\n.*', '' } |  # Keep only the first line of each commit message
+                  Select-Object -First 10 |  # Limit to first 10 commits
+                  Add-Content -Path $notesFile
+              }
+            }
+
+            # Display generated notes
+            Write-Host "Release notes content:"
+            Get-Content -Path $notesFile
+
+            # Create the release with the generated notes
             gh release create "$tagName" "release\Rusty-Analyser.zip" `
-              --title "Release $tagName" `
-              --notes "Automated release for tag $tagName"
+              --title "TEST RELEASE" `
+              --notes-file $notesFile
           } else {
             Write-Host "Not a tag push, skipping release creation."
           }
