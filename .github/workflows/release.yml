@@ -47,12 +47,26 @@ jobs:
             $tagName = $env:GITHUB_REF.Substring(10)  # Remove 'refs/tags/' prefix
             $previousTag = $(gh api repos/${{ github.repository }}/tags --jq '.[1].name' 2>$null)
           
-            # Path to your release notes file - CHANGE THIS to your actual file path
-            $notesFile = "RELEASE_NOTES.md"
+            # Define possible locations for your release notes file
+            $possiblePaths = @(
+              "RELEASE_NOTES.md",                 # Root directory
+              "docs/RELEASE_NOTES.md",            # Docs folder
+              ".github/RELEASE_NOTES.md",         # GitHub folder
+              "resources/RELEASE_NOTES.md",       # Resources folder
+            )
           
-            # Check if your release notes file exists
-            if (Test-Path -Path $notesFile) {
-              Write-Host "Using existing release notes file: $notesFile"
+            # Try to find the notes file
+            $notesFile = $null
+            foreach ($path in $possiblePaths) {
+              if (Test-Path -Path $path) {
+                $notesFile = $path
+                break
+              }
+            }
+          
+            # Check if your release notes file was found
+            if ($notesFile) {
+              Write-Host "Found release notes file: $notesFile"
           
               # Get the content of the release notes file
               $notesContent = Get-Content -Path $notesFile -Raw
@@ -63,8 +77,8 @@ jobs:
           
                 # Create a temporary file with both the notes and the changelog link
                 $tempNotesFile = "TEMP_NOTES.md"
-                $notesContent | Out-File -FilePath $tempNotesFile
-                "`n`n$changelogLink" | Add-Content -FilePath $tempNotesFile
+                $notesContent | Out-File -Path $tempNotesFile
+                "`n`n$changelogLink" | Add-Content -Path $tempNotesFile
           
                 # Display generated notes
                 Write-Host "Release notes content:"
@@ -86,11 +100,11 @@ jobs:
           
               # Create a basic notes file if yours doesn't exist
               $basicNotesFile = "BASIC_NOTES.md"
-              "Release $tagName" | Out-File -FilePath $basicNotesFile
+              "Release $tagName" | Out-File -Path $basicNotesFile
           
               if ($previousTag) {
                 "`n`n**Full Changelog**: https://github.com/${{ github.repository }}/compare/$previousTag...$tagName" | 
-                  Add-Content -FilePath $basicNotesFile
+                  Add-Content -Path $basicNotesFile
               }
           
               # Create the release with basic notes
