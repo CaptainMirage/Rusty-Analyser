@@ -1,9 +1,10 @@
 name: Release with GitHub CLI
 
 on:
+  workflow_dispatch:  # Allows manual triggering
   push:
     tags:
-      - "v*" # git tag vx.x.x
+      - "v*"  # Triggers when a tag starting with "v" is pushed
 
 jobs:
   release:
@@ -13,12 +14,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Build your Rust project
+      # 2. Check that GitHub CLI is available (optional, for debugging)
+      - name: Check GitHub CLI version
+        run: gh --version
+
+      # 3. Build your Rust project in release mode
       - name: Build binary
         run: cargo build --release
 
-      # 3. Package your binary (optional)
-      # Adjust the binary name as needed.
+      # 4. Package your binary into a zip file
       - name: Package binary
         run: |
           mkdir release
@@ -26,13 +30,11 @@ jobs:
           cd release
           zip Rusty-Analyser.zip Rusty-Analyser
 
-      # 4. Create a release and upload asset using GitHub CLI
-      # The GitHub CLI (gh) is pre-installed on ubuntu-latest runners.
+      # 5. Create a GitHub release and upload the packaged binary using GitHub CLI
       - name: Create Release and Upload Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Use github.ref_name to get the tag name without the 'refs/tags/' prefix.
-          gh release create "${{ github.ref_name }}" release/your_binary_name.zip \
+          gh release create "${{ github.ref_name }}" release/Rusty-Analyser.zip \
             --title "Release ${{ github.ref_name }}" \
             --notes "Automated release for tag ${{ github.ref_name }}"
