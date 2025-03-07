@@ -9,7 +9,6 @@ use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     io::{self, Error},
-    os::windows::ffi::{OsStrExt, OsStringExt},
     path::Path,
     time::{
         SystemTime, UNIX_EPOCH},
@@ -17,10 +16,13 @@ use std::{
         Arc, Mutex}
 };
 use walkdir::WalkDir;
+#[cfg(target_os = "windows")]
 use winapi::um::{
     fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
     winbase::DRIVE_FIXED,
 };
+#[cfg(target_os = "windows")]
+use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
 pub struct StorageAnalyzer {
     pub drives: Vec<String>,
