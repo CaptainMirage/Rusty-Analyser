@@ -52,7 +52,7 @@ jobs:
               "RELEASE_NOTES.md",                 # Root directory
               "docs/RELEASE_NOTES.md",            # Docs folder
               ".github/RELEASE_NOTES.md",         # GitHub folder
-              "resources/RELEASE_NOTES.md",       # Resources folder
+              "resources/RELEASE_NOTES.md"        # Resources folder
             )
           
             # Try to find the notes file
