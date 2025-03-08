@@ -33,84 +33,72 @@ Below is a list of available commands along with their usage and a brief descrip
   
 Displays descriptions for all commands. If you specify a command, it shows details only for that command.
 
--------------
 
 **Exit**  
 `exit [code]` 
 
 Exits the application. Optionally accepts an exit code.
 
--------------
 
 **Echo**  
 `echo [message]`
   
 Repeats the provided message back to you.
 
--------------
 
 **Type**  
 `type [command]` 
 
 Checks whether a given command exists.
 
--------------
 
 **pwd**  
 `pwd`
   
 Displays the current working directory.
 
--------------
 
 **Drive Space**  
 `drive-space [drive]`
   
 Shows the drive’s total, used, and free space.
 
--------------
 
 **File Type Distribution**  
 `file-type-dist [drive]`
   
 Displays the distribution of the top 10 file types by space usage.
 
--------------
 
 **Largest Files**  
 `largest-files [drive]`
   
 Lists the top 10 largest files on the specified drive.
 
--------------
 
 **Largest Folder**  
 `largest-folder [drive]`
 
 Shows the top 10 largest folders (up to 3 levels deep), excluding hidden folders.
 
--------------  
 
 **Recent Large Files**  
 `recent-large-files [drive]`
  
 Lists large files that were modified within the last 30 days.
 
-------------- 
 
 **Old Large Files**  
 `old-large-files [drive]`
 
 Lists large files that are older than 6 months.
 
-------------- 
 
 **Full Drive Analysis**  
 `full-drive-analysis [drive]`
 
 Performs a comprehensive analysis of the entire drive.
 
-------
 
 **Empty Folders**  
 `empty-folders [drive] [-delete]`
