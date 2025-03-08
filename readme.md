@@ -86,14 +86,10 @@ Lists large files that are older than 6 months.
 **Full Drive Analysis**  
 `full-drive-analysis [drive]`
 
--------------  
-
 Performs a comprehensive analysis of the entire drive.
 
 **Empty Folders**  
 `empty-folders [drive] [-delete]`
-
--------------  
 
 Searches for empty folders on the specified drive. The `-delete` flag is reserved for future deletion functionality.
 
