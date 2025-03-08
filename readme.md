@@ -88,6 +88,8 @@ Lists large files that are older than 6 months.
 
 Performs a comprehensive analysis of the entire drive.
 
+------
+
 **Empty Folders**  
 `empty-folders [drive] [-delete]`
 
