@@ -28,7 +28,7 @@ but that depends on the drive speed since it uses I/O scanning.
 ## Commands
 
 Below is a list of available commands along with their usage and a brief description:
-(i forgot to put it in the help commands list, sorry not sorry)
+(i forgot to put the command itself in the help commands list, sorry not sorry)
 
 **Help**  
 `help [command]`
