@@ -1,10 +1,11 @@
-<h1 align="center">Rusty Analyser<h1/>
-
+<h1 align="center">Rusty Analyser</h1>
+  
 ![Version Badge](https://img.shields.io/badge/Version-Alpha-%23e81919?style=flat&color=%23e81919)
 ![DevStage Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
 ![Update Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?)
 ![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads-pre/CaptainMirage/Rusty-Analyser/latest/total?style=flat&label=Total%20Downloads&color=%2322c2a0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 
 ## Overview
 
