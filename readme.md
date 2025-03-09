@@ -1,6 +1,6 @@
 <h1 align="center">Rusty Analyser</h1>
   
-![Version Badge](https://img.shields.io/badge/Version-Alpha-%23e81919?style=flat&color=%23e81919)
+![Version Badge](https://img.shields.io/badge/Version-Beta-%23e81919?style=flat&color=%461%4340%46)
 ![DevStage Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
 ![Total Lines](https://tokei.rs/b1/github/CaptainMirage/Rusty-Analyser?category=code&style=flat)
 ![Update Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?)
