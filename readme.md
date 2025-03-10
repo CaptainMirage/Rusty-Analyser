@@ -1,10 +1,12 @@
-# Rusty Analyser
+<h1 align="center">Rusty Analyser</h1>
 
-![Static Badge](https://img.shields.io/badge/Version-Alpha-%23e81919?style=flat&color=%23e81919)
-![Static Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
-![Static Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?)
+![Version Badge](https://img.shields.io/badge/Version-Beta-%23e81919?style=flat&color=%461%4340%46)
+![DevStage Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CaptainMirage/Rusty-Analyser/release.yml?style=flat)
+![Total Lines](https://tokei.rs/b1/github/CaptainMirage/Rusty-Analyser?category=code&style=flat)
 ![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads-pre/CaptainMirage/Rusty-Analyser/latest/total?style=flat&label=Total%20Downloads&color=%2322c2a0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+<!-- ![Update Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?) -->
 
 ## Overview
 
@@ -18,15 +20,16 @@ but that depends on the drive speed since it uses I/O scanning.
 - **Bash system:** the whole project is in a bash like system, custom-made
 
 ## Coming Features
-- a more talkative terminal
-- faster scans with NTFS scanning 
+- [ ] a more talkative terminal
+- [ ] faster scans with NTFS scanning 
 (likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.)
-- smart commands
-- auto complete commands
+- [ ] smart commands
+- [ ] auto complete commands
 
 ## Commands
 
 Below is a list of available commands along with their usage and a brief description:
+(i forgot to put the command itself in the help commands list, sorry not sorry)
 
 **Help**  
 `help [command]`
