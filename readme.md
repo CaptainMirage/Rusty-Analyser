@@ -2,6 +2,7 @@
   
 ![Version Badge](https://img.shields.io/badge/Version-Beta-%23e81919?style=flat&color=%461%4340%46)
 ![DevStage Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CaptainMirage/Rusty-Analyser/release.yml?style=flat)
 ![Total Lines](https://tokei.rs/b1/github/CaptainMirage/Rusty-Analyser?category=code&style=flat)
 ![Update Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?)
 ![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads-pre/CaptainMirage/Rusty-Analyser/latest/total?style=flat&label=Total%20Downloads&color=%2322c2a0)
