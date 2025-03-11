@@ -1,21 +1,15 @@
-use crate::analyzer::{
-    StorageAnalyzer,
-    constants::*
-};
-use super::{
-    help_cmd::*
-};
-use crate::analyzer::utils;
+use super::help_cmd::*;
+use crate::analyser::utils;
+use crate::analyser::{StorageAnalyser, constants::*};
+use colored::{ColoredString, Colorize};
+use lazy_static::lazy_static;
+use rayon::max_num_threads;
 use std::{
     env,
     io::{self, Write},
     process,
 };
-use colored::{ColoredString, Colorize};
-use lazy_static::lazy_static;
-use rayon::max_num_threads;
 use whoami::fallible;
-
 
 fn prompter_fn() {
     let _user: String = whoami::username();
@@ -36,35 +30,40 @@ where
     F: FnOnce(&str) -> Result<(), io::Error>,
 {
     let drive = drive.to_uppercase();
-    
+
     if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
         // user entered just the letter (e.g., "C"), format it properly
-        if let Err(e) = action(format!("{}:/", drive).as_str()) { 
+        if let Err(e) = action(format!("{}:/", drive).as_str()) {
             eprintln!("Error: {}", e);
         }
-    } else if drive.len() == 3 && drive.ends_with(":/") &&
-        drive.chars().next().unwrap().is_ascii_alphabetic() {
+    } else if drive.len() == 3
+        && drive.ends_with(":/")
+        && drive.chars().next().unwrap().is_ascii_alphabetic()
+    {
         // user entered a valid full path (e.g., "C:/"), use it directly
         if let Err(e) = action(drive.as_str()) {
             eprintln!("Error: {}", e);
         }
     } else {
         // invalid input
-        eprintln!("Invalid drive format. Please enter a single letter (e.g., 'C')\
-         or a valid drive path (e.g., 'C:/').");
+        eprintln!(
+            "Invalid drive format. Please enter a single letter (e.g., 'C')\
+         or a valid drive path (e.g., 'C:/')."
+        );
     }
 }
 
 fn print_command_help(command: &String) {
-        if let Some(info) = COMMAND_DESCRIPTIONS.get(command.as_str()) {
-            print!("\n{}\n-------------\n{}\n",
-                     info.title.bright_white(),
-                   // info.cmd_args,
-                     info.description
-            );
-        } else {
-            println!("Command not found: {}", command);
-        }
+    if let Some(info) = COMMAND_DESCRIPTIONS.get(command.as_str()) {
+        print!(
+            "\n{}\n-------------\n{}\n",
+            info.title.bright_white(),
+            // info.cmd_args,
+            info.description
+        );
+    } else {
+        println!("Command not found: {}", command);
+    }
 }
 
 fn print_all_help() {
@@ -72,23 +71,23 @@ fn print_all_help() {
     // let mut commands: Vec<_> = COMMAND_DESCRIPTIONS.iter().collect();
     // commands.sort_by_key(|(cmd, _)| *cmd);
 
-    for (_, info) in COMMAND_DESCRIPTIONS.iter()  {
-        print!("\n{}\n-------------\n{}",
-               info.title.bright_white(),
-               info.description
+    for (_, info) in COMMAND_DESCRIPTIONS.iter() {
+        print!(
+            "\n{}\n-------------\n{}",
+            info.title.bright_white(),
+            info.description
         );
         println!(); // add an extra newline between commands
     }
 }
 
 pub fn bash_commands() {
-    
     prompter_fn();
 
     // wait for user input
     let stdin = io::stdin();
     let mut input = String::new();
-    let mut analyzer: StorageAnalyzer = StorageAnalyzer::new();
+    let mut analyser: StorageAnalyser = StorageAnalyser::new();
     loop {
         stdin.read_line(&mut input).unwrap();
         let command: Vec<String> = input
@@ -107,13 +106,17 @@ pub fn bash_commands() {
             // some default commands
             ["exit", ..] => match command.get(1) {
                 Some(code) => process::exit(code.parse::<i32>().unwrap()),
-                None => process::exit(0),  // Default exit code if none provided
+                None => process::exit(0), // Default exit code if none provided
             },
             ["echo", ..] => match command.get(1..) {
-                Some(words) => if words == ["i", "am", "an", "idiot"] {
-                    println!("you are an idiot")
-                } else { println!("{}", words.join(" ")) },
-                None => println!(),  // Just print newline if no arguments given
+                Some(words) => {
+                    if words == ["i", "am", "an", "idiot"] {
+                        println!("you are an idiot")
+                    } else {
+                        println!("{}", words.join(" "))
+                    }
+                }
+                None => println!(), // Just print newline if no arguments given
             },
             ["pwd"] => match env::current_dir() {
                 Ok(path) => println!("{}", path.display()),
@@ -122,50 +125,55 @@ pub fn bash_commands() {
             ["help", ..] => match command.get(1) {
                 Some(cword) => print_command_help(cword),
                 None => print_all_help(),
-            }
-            
+            },
+
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
-                Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_drive_space_overview(d)),
+                Some(drive) => {
+                    validate_and_format_drive(drive, |d| analyser.print_drive_space_overview(d))
+                }
                 None => println!("didnt put any inputs for DriveSpace"),
-            }
-            
+            },
+
             ["file-type-dist", ..] => match command.get(1) {
-                    Some(drive) => validate_and_format_drive
-                        (drive, |d| analyzer.print_file_type_distribution(d)),
-                    None => println!("didnt put any inputs for DriveSpace"),
+                Some(drive) => {
+                    validate_and_format_drive(drive, |d| analyser.print_file_type_distribution(d))
                 }
-            
+                None => println!("didnt put any inputs for DriveSpace"),
+            },
+
             ["largest-files", ..] => match command.get(1) {
-                    Some(drive) => validate_and_format_drive
-                        (drive, |d| analyzer.print_largest_files(d)),
-                    None => println!("didnt put any inputs for DriveSpace"),
+                Some(drive) => {
+                    validate_and_format_drive(drive, |d| analyser.print_largest_files(d))
                 }
-            
+                None => println!("didnt put any inputs for DriveSpace"),
+            },
+
             ["largest-folder", ..] => match command.get(1) {
-                    Some(drive) => validate_and_format_drive
-                        (drive, |d| analyzer.print_largest_folders(d)),
-                    None => println!("didnt put any inputs for DriveSpace"),
+                Some(drive) => {
+                    validate_and_format_drive(drive, |d| analyser.print_largest_folders(d))
                 }
-            
+                None => println!("didnt put any inputs for DriveSpace"),
+            },
+
             ["recent-large-files", ..] => match command.get(1) {
-                Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_recent_large_files(d)),
+                Some(drive) => {
+                    validate_and_format_drive(drive, |d| analyser.print_recent_large_files(d))
+                }
                 None => println!("didnt put any inputs for DriveSpace"),
-            }
-            
+            },
+
             ["old-large-files", ..] => match command.get(1) {
-                Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.print_old_large_files(d)),
+                Some(drive) => {
+                    validate_and_format_drive(drive, |d| analyser.print_old_large_files(d))
+                }
                 None => println!("didnt put any inputs for DriveSpace"),
-            }
-            
+            },
+
             ["full-drive-analysis", ..] => match command.get(1) {
-                Some(drive) => validate_and_format_drive
-                    (drive, |d| analyzer.analyze_drive(d)),
+                Some(drive) => validate_and_format_drive(drive, |d| analyser.analyze_drive(d)),
                 None => println!("didnt put any inputs for DriveSpace"),
-            }
+            },
 
             ["empty-folders", ..] => {
                 if command.contains(&"-delete".to_string()) {
@@ -174,8 +182,7 @@ pub fn bash_commands() {
                 } else {
                     match command.get(1) {
                         Some(drive) => validate_and_format_drive(drive, |d| {
-                            let mut analyzer = StorageAnalyzer::new();
-                            let empty_folders = analyzer.get_empty_folders(d)?;
+                            let empty_folders = analyser.get_empty_folders(d)?;
                             println!("Found {} empty folders.", empty_folders.len());
                             for folder in &empty_folders {
                                 println!(" - {}", folder);
@@ -188,7 +195,6 @@ pub fn bash_commands() {
                 }
             }
 
-            
             _ => {
                 println!("{}: not found", command[0]);
             }
