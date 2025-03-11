@@ -59,6 +59,7 @@ fn print_command_help(command: &String) {
         if let Some(info) = COMMAND_DESCRIPTIONS.get(command.as_str()) {
             print!("\n{}\n-------------\n{}\n",
                      info.title.bright_white(),
+                   // info.cmd_args,
                      info.description
             );
         } else {
