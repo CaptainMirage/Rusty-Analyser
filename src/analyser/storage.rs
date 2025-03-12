@@ -1,19 +1,15 @@
-use super::{
-    constants::*,
-    utils::*,
-    types::* 
-};
+use super::{constants::*, types::*, utils::*};
 use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
-use rayon::{prelude::*, ThreadPoolBuilder};
+use rayon::{ThreadPoolBuilder, prelude::*};
+#[cfg(target_os = "windows")]
+use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     io::{self, Error},
     path::Path,
-    time::{
-        SystemTime, UNIX_EPOCH},
-    sync::{
-        Arc, Mutex}
+    sync::{Arc, Mutex},
+    time::{SystemTime, UNIX_EPOCH},
 };
 use walkdir::WalkDir;
 #[cfg(target_os = "windows")]
@@ -21,29 +17,34 @@ use winapi::um::{
     fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
     winbase::DRIVE_FIXED,
 };
-#[cfg(target_os = "windows")]
-use std::os::windows::ffi::{OsStrExt, OsStringExt};
 
-pub struct StorageAnalyzer {
+pub struct StorageAnalyser {
     pub drives: Vec<String>,
     file_cache: HashMap<String, Vec<FileInfo>>,
-    folder_cache: HashMap<String, Vec<FolderSize>>
+    folder_cache: HashMap<String, Vec<FolderSize>>,
 }
 
-impl StorageAnalyzer {
+impl StorageAnalyser {
     pub fn new() -> Self {
         let drives = Self::list_drives();
-        StorageAnalyzer {
+        StorageAnalyser {
             drives,
             file_cache: HashMap::new(),
             folder_cache: HashMap::new(),
         }
     }
-    
+
     fn print_file_info(file: &FileInfo) {
         println!("\n[*] Path: {}", file.full_path);
-        println!("    Size: {:.2} MB / {:.2} GB", file.size_mb, file.size_mb/1000.0);
-        println!("    Last Modified: {}", file.last_modified.as_deref().unwrap_or("Unknown"));
+        println!(
+            "    Size: {:.2} MB / {:.2} GB",
+            file.size_mb,
+            file.size_mb / 1000.0
+        );
+        println!(
+            "    Last Modified: {}",
+            file.last_modified.as_deref().unwrap_or("Unknown")
+        );
         if let Some(last_accessed) = &file.last_accessed {
             println!("    Last Accessed: {}", last_accessed);
         }
@@ -83,7 +84,10 @@ impl StorageAnalyzer {
     // a full scan fn that calls all other ones
     pub fn analyze_drive(&mut self, drive: &str) -> io::Result<()> {
         if !self.drives.contains(&drive.to_string()) {
-            println!("Drive {} is not a valid fixed drive. Valid drives are: {:?}", drive, self.drives);
+            println!(
+                "Drive {} is not a valid fixed drive. Valid drives are: {:?}",
+                drive, self.drives
+            );
             return Ok(());
         }
 
@@ -102,9 +106,8 @@ impl StorageAnalyzer {
         Ok(())
     }
 
-    
     // -- private calculation functions -- //
-    
+
     // uses Windows API to get drive space information
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
         use winapi::um::winnt::ULARGE_INTEGER;
@@ -249,9 +252,12 @@ impl StorageAnalyzer {
         let six_months_ago = Utc::now().naive_utc() - Duration::days(180);
 
         files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
-                .map(|dt| dt < six_months_ago)
-                .unwrap_or(false)
+            NaiveDateTime::parse_from_str(
+                &file.last_modified.as_deref().unwrap_or("Unknown"),
+                DATE_FORMAT,
+            )
+            .map(|dt| dt < six_months_ago)
+            .unwrap_or(false)
         });
 
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
@@ -261,7 +267,7 @@ impl StorageAnalyzer {
     // gets recently modified large files (within last 30 days)
     fn get_recent_large_files(&mut self, drive: &str) -> io::Result<Vec<FileInfo>> {
         collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)?;
-        
+
         let mut files = if let Some(files) = self.file_cache.get(drive) {
             files.clone()
         } else {
@@ -269,9 +275,12 @@ impl StorageAnalyzer {
         };
         let thirty_days_ago = Utc::now().naive_utc() - Duration::days(30);
         files.retain(|file| {
-            NaiveDateTime::parse_from_str(&file.last_modified.as_deref().unwrap_or("Unknown"), DATE_FORMAT)
-                .map(|dt| dt > thirty_days_ago)
-                .unwrap_or(false)
+            NaiveDateTime::parse_from_str(
+                &file.last_modified.as_deref().unwrap_or("Unknown"),
+                DATE_FORMAT,
+            )
+            .map(|dt| dt > thirty_days_ago)
+            .unwrap_or(false)
         });
         files.sort_by(|a, b| b.size_mb.partial_cmp(&a.size_mb).unwrap());
         Ok(files)
@@ -293,16 +302,18 @@ impl StorageAnalyzer {
         }
     }
 
-    
-    // -- public printing functions -- // 
-    
+    // -- public printing functions -- //
+
     pub fn print_drive_space_overview(&self, drive: &str) -> io::Result<()> {
         match self.get_drive_space(drive) {
             Ok(analysis) => {
                 println!("\n--- Drive Space Overview ---");
                 println!("Total Size: {:.2} GB", analysis.total_size);
                 println!("Used Space: {:.2} GB", analysis.used_space);
-                println!("Free Space: {:.2} GB ({:.2}%)", analysis.free_space, analysis.free_space_percent);
+                println!(
+                    "Free Space: {:.2} GB ({:.2}%)",
+                    analysis.free_space, analysis.free_space_percent
+                );
                 Ok(())
             }
             Err(e) => {
@@ -372,7 +383,7 @@ impl StorageAnalyzer {
         }
         Ok(())
     }
-    
+
     pub fn print_empty_folders(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Empty Folders ---");
         let empty_folders = self.get_empty_folders(drive)?;
