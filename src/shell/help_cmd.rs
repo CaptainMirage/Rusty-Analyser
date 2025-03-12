@@ -1,17 +1,16 @@
+use super::types::*;
+use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use std::collections::{HashMap, HashSet};
-use indexmap::IndexMap;
-use super::{
-    types::*
-};
 
 macro_rules! add_command {
     ($reg:ident, $name:expr, title: $title:expr, cmd_args: $args:expr, description: $desc:expr $(,)?) => {{
         $reg.0.insert($name);
-        $reg.1.insert($name, CommandInfo { 
-            title       : $title,
-            cmd_args    : $args,
-            description : $desc });
+        $reg.1.insert($name, CommandInfo {
+            title: $title,
+            cmd_args: $args,
+            description: $desc,
+        });
     }};
 }
 
