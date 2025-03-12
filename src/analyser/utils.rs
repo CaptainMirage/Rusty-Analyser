@@ -1,20 +1,23 @@
-use chrono::{DateTime, TimeZone, Utc};
-use std::{
-    fs::{create_dir_all, OpenOptions},
-    time::{SystemTime, UNIX_EPOCH}
-};
+use super::{constants::*, types::*};
 use crate::DATE_FORMAT;
-use std::{collections::HashMap, io, io::Write, path::Path, sync::{Arc, Mutex}};
+use chrono::{DateTime, TimeZone, Utc};
+use rand::Rng;
 use rayon::prelude::*;
-use walkdir::WalkDir;
-use super::{
-    constants::*,
-    types::*
-};
+use std::io::stdout;
 use std::thread::sleep;
 use std::time::Duration;
-use std::{io::{stdout}};
-use rand::Rng;
+use std::{
+    collections::HashMap,
+    io,
+    io::Write,
+    path::Path,
+    sync::{Arc, Mutex},
+};
+use std::{
+    fs::{OpenOptions, create_dir_all},
+    time::{SystemTime, UNIX_EPOCH},
+};
+use walkdir::WalkDir;
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
@@ -72,14 +75,17 @@ pub fn save_empty_folders_to_file(empty_folders: &[String]) -> io::Result<()> {
         writeln!(file, " - {}", folder)?;
     }
 
-    println!("Saved empty folders report to: {}", report_file_path.display());
+    println!(
+        "Saved empty folders report to: {}",
+        report_file_path.display()
+    );
     Ok(())
 }
 
 pub fn collect_and_cache_files(
     drive: &str,
     file_cache: &mut HashMap<String, Vec<FileInfo>>,
-    folder_cache: &mut HashMap<String, Vec<FolderSize>>
+    folder_cache: &mut HashMap<String, Vec<FolderSize>>,
 ) -> io::Result<()> {
     if file_cache.contains_key(drive) || folder_cache.contains_key(drive) {
         println!("Cached scan found! Proceeding..");
@@ -128,16 +134,26 @@ pub fn collect_and_cache_files(
     }
 
     println!("Scanning complete..");
-    file_cache.insert(drive.to_string(), Arc::try_unwrap(file_cache_arc).unwrap().into_inner().unwrap());
-    folder_cache.insert(drive.to_string(), Arc::try_unwrap(folder_cache_arc).unwrap().into_inner().unwrap());
+    file_cache.insert(
+        drive.to_string(),
+        Arc::try_unwrap(file_cache_arc)
+            .unwrap()
+            .into_inner()
+            .unwrap(),
+    );
+    folder_cache.insert(
+        drive.to_string(),
+        Arc::try_unwrap(folder_cache_arc)
+            .unwrap()
+            .into_inner()
+            .unwrap(),
+    );
     println!("Caching files and folders..");
 
     Ok(())
 }
 
-pub fn type_text(
-    text: &str, base_speed_ms: u64,
-    end_delay_ms: Option<u64>, natural: bool) {
+pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natural: bool) {
     let stdout = stdout();
     let mut handle = stdout.lock();
     let mut rng = rand::rng();
@@ -172,9 +188,10 @@ pub fn type_text(
             }
 
             // simulate faster typing for common character sequences
-            if (prev_char == 't' && c == 'h') ||
-                (prev_char == 'i' && c == 'n') ||
-                (prev_char == 'a' && c == 'n') {
+            if (prev_char == 't' && c == 'h')
+                || (prev_char == 'i' && c == 'n')
+                || (prev_char == 'a' && c == 'n')
+            {
                 char_delay = char_delay.saturating_sub(10);
             }
         }
@@ -205,7 +222,7 @@ pub fn tester_function() {
         "Hello, this is a demonstration of the natural typing effect! It mimics how a real person would type.",
         70,
         None,
-        true
+        true,
     );
 
     // Using the simplified function for quick usage
@@ -218,7 +235,7 @@ pub fn tester_function() {
         "The quick brown fox jumps over the lazy dog. How natural does this feel?",
         60,
         Some(700),
-        true
+        true,
     );
 
     println!("\nMechanical typing (constant speed):");
@@ -226,6 +243,6 @@ pub fn tester_function() {
         "The quick brown fox jumps over the lazy dog. Notice the difference?",
         60,
         Some(700),
-        false
+        false,
     );
 }
