@@ -106,6 +106,7 @@ impl StorageAnalyser {
         Ok(())
     }
 
+    
     // -- private calculation functions -- //
 
     // uses Windows API to get drive space information
@@ -302,6 +303,7 @@ impl StorageAnalyser {
         }
     }
 
+    
     // -- public printing functions -- //
 
     pub fn print_drive_space_overview(&self, drive: &str) -> io::Result<()> {
