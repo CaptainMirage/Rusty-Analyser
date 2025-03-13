@@ -153,6 +153,34 @@ pub fn collect_and_cache_files(
     Ok(())
 }
 
+pub fn validate_and_format_drive<F>(drive: &str, action: F)
+where
+    F: FnOnce(&str) -> Result<(), io::Error>,
+{
+    let drive = drive.to_uppercase();
+
+    if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
+        // user entered just the letter (e.g., "C"), format it properly
+        if let Err(e) = action(format!("{}:/", drive).as_str()) {
+            eprintln!("Error: {}", e);
+        }
+    } else if drive.len() == 3
+        && drive.ends_with(":/")
+        && drive.chars().next().unwrap().is_ascii_alphabetic()
+    {
+        // user entered a valid full path (e.g., "C:/"), use it directly
+        if let Err(e) = action(drive.as_str()) {
+            eprintln!("Error: {}", e);
+        }
+    } else {
+        // invalid input
+        eprintln!(
+            "Invalid drive format. Please enter a single letter (e.g., 'C')\
+         or a valid drive path (e.g., 'C:/')."
+        );
+    }
+}
+
 pub fn type_text(text: &str, base_speed_ms: u64, end_delay_ms: Option<u64>, natural: bool) {
     let stdout = stdout();
     let mut handle = stdout.lock();
@@ -216,6 +244,7 @@ pub fn type_text_simple(text: &str, speed_ms: u64) {
     type_text(text, speed_ms, Some(500), true);
 }
 
+#[allow(dead_code)]
 pub fn tester_function() {
     // Natural typing effect with default end delay
     type_text(
