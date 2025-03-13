@@ -1,5 +1,8 @@
 use super::help_cmd::*;
-use crate::analyser::utils;
+use crate::analyser::utils::{
+    validate_and_format_drive,
+    save_empty_folders_to_file,
+};
 use crate::analyser::{StorageAnalyser, constants::*};
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
@@ -10,6 +13,17 @@ use std::{
     process,
 };
 use whoami::fallible;
+
+macro_rules! vfd {
+    // Pattern to accept an arbitrary closure block
+    ($drive:expr, $action:expr) => {
+        validate_and_format_drive($drive, $action)
+    };
+    // Pattern for the simpler case of passing an instance and method name
+    ($drive:expr, $instance:expr, $method:ident) => {
+        validate_and_format_drive($drive, |d| $instance.$method(d))
+    };
+}
 
 fn prompter_fn() {
     let _user: String = whoami::username();
@@ -23,34 +37,6 @@ fn prompter_fn() {
     );
     print!("{}", prompt);
     io::stdout().flush().unwrap();
-}
-
-fn validate_and_format_drive<F>(drive: &str, action: F)
-where
-    F: FnOnce(&str) -> Result<(), io::Error>,
-{
-    let drive = drive.to_uppercase();
-
-    if drive.len() == 1 && drive.chars().all(|c| c.is_ascii_alphabetic()) {
-        // user entered just the letter (e.g., "C"), format it properly
-        if let Err(e) = action(format!("{}:/", drive).as_str()) {
-            eprintln!("Error: {}", e);
-        }
-    } else if drive.len() == 3
-        && drive.ends_with(":/")
-        && drive.chars().next().unwrap().is_ascii_alphabetic()
-    {
-        // user entered a valid full path (e.g., "C:/"), use it directly
-        if let Err(e) = action(drive.as_str()) {
-            eprintln!("Error: {}", e);
-        }
-    } else {
-        // invalid input
-        eprintln!(
-            "Invalid drive format. Please enter a single letter (e.g., 'C')\
-         or a valid drive path (e.g., 'C:/')."
-        );
-    }
 }
 
 fn print_command_help(command: &String) {
@@ -129,49 +115,37 @@ pub fn bash_commands() {
 
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
-                Some(drive) => {
-                    validate_and_format_drive(drive, |d| analyser.print_drive_space_overview(d))
-                }
+                Some(drive) => vfd!(drive, analyser, print_drive_space_overview),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
             ["file-type-dist", ..] => match command.get(1) {
-                Some(drive) => {
-                    validate_and_format_drive(drive, |d| analyser.print_file_type_distribution(d))
-                }
+                Some(drive) => vfd!(drive, analyser, print_file_type_distribution),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
             ["largest-files", ..] => match command.get(1) {
-                Some(drive) => {
-                    validate_and_format_drive(drive, |d| analyser.print_largest_files(d))
-                }
+                Some(drive) => vfd!(drive, analyser, print_largest_files),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
             ["largest-folder", ..] => match command.get(1) {
-                Some(drive) => {
-                    validate_and_format_drive(drive, |d| analyser.print_largest_folders(d))
-                }
+                Some(drive) => vfd!(drive, analyser, print_largest_folders),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
             ["recent-large-files", ..] => match command.get(1) {
-                Some(drive) => {
-                    validate_and_format_drive(drive, |d| analyser.print_recent_large_files(d))
-                }
+                Some(drive) => vfd!(drive, analyser, print_recent_large_files),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
             ["old-large-files", ..] => match command.get(1) {
-                Some(drive) => {
-                    validate_and_format_drive(drive, |d| analyser.print_old_large_files(d))
-                }
+                Some(drive) => vfd!(drive, analyser, print_old_large_files),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
             ["full-drive-analysis", ..] => match command.get(1) {
-                Some(drive) => validate_and_format_drive(drive, |d| analyser.analyze_drive(d)),
+                Some(drive) => vfd!(drive, analyser, analyze_drive),
                 None => println!("didnt put any inputs for DriveSpace"),
             },
 
@@ -181,13 +155,13 @@ pub fn bash_commands() {
                     println!("Deletion functionality for empty folders is not yet implemented.");
                 } else {
                     match command.get(1) {
-                        Some(drive) => validate_and_format_drive(drive, |d| {
+                        Some(drive) => vfd!(drive, |d| {
                             let empty_folders = analyser.get_empty_folders(d)?;
                             println!("Found {} empty folders.", empty_folders.len());
                             for folder in &empty_folders {
                                 println!(" - {}", folder);
                             }
-                            utils::save_empty_folders_to_file(&empty_folders)?; // saves the stuff
+                            save_empty_folders_to_file(&empty_folders)?;
                             Ok(())
                         }),
                         None => println!("No drive provided for empty-folders command."),
