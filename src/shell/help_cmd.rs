@@ -18,7 +18,7 @@ lazy_static! {
     // Create a tuple containing built-in command names (HashSet) and ordered command descriptions (IndexMap).
     static ref COMMANDS: (HashSet<&'static str>, IndexMap<&'static str, CommandInfo>) = {
         let mut m = (HashSet::new(), IndexMap::new());
-        
+
         add_command!{
             m, "help",
             title      : "Help",
