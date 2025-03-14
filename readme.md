@@ -4,7 +4,7 @@
 ![DevStage Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CaptainMirage/Rusty-Analyser/release.yml?style=flat)
 ![Total Lines](https://tokei.rs/b1/github/CaptainMirage/Rusty-Analyser?category=code&style=flat)
-![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads-pre/CaptainMirage/Rusty-Analyser/latest/total?style=flat&label=Total%20Downloads&color=%2322c2a0)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/CaptainMirage/Rusty-Analyser/total?style=flat&color=%2322c2a0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <!-- ![Update Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?) -->
 
