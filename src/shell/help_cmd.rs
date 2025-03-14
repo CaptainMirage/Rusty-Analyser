@@ -22,45 +22,45 @@ lazy_static! {
         add_command!{
             m, "help",
             title      : "Help",
-            cmd_args   : "",
+            cmd_args   : "help [cmd name]",
             description: "Displays all commands descriptions \n\
                         if an argument is given, it gives the command description of the said argument",
         }
         add_command!{
             m, "exit",
             title      : "Exit",
-            cmd_args   : "",
+            cmd_args   : "exit [exit code]",
             description: "hey, you, yes you, if you can read this and understand it, \n\
                         then there is no need for an explanation of what this command does",
         }
         add_command!{
             m, "echo",
             title      : "Echo",
-            cmd_args   : "",
+            cmd_args   : "echo [string]",
             description: "Repeats what you say, probably",
         }
         add_command!{
             m, "type",
             title      : "Type",
-            cmd_args   : "",
+            cmd_args   : "type [cmd name]",
             description: "It just tells you if the command exists",
         }
         add_command!{
             m, "pwd",
             title      : "pwd",
-            cmd_args   : "",
+            cmd_args   : "pwd",
             description: "Shows the location the program is ran in",
         }
         add_command!{
             m, "drive-space",
             title      : "Drive Space",
-            cmd_args   : "",
+            cmd_args   : "drive-space [drive]",
             description: "Shows the amount of space in a drive, what else do you want?",
         }
         add_command!{
             m, "file-type-dist",
             title      : "File Type Distribution",
-            cmd_args   : "",
+            cmd_args   : "file-type-dist [drive]",
             description: "Shows the distribution of the 10 file formats taking the largest space",
         }
         add_command!{
