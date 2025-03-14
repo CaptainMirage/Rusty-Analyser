@@ -42,11 +42,10 @@ fn print_command_help(command: &String) {
             "\n\
             {}\n\
             {}\n\
-            {}\n\
             {}\n",
-            info.title.bright_white(),
-            "-------------".green().bold(),
+            //info.title.bright_white(),
             info.cmd_args.bright_blue(),
+            "-------------".green().bold(),
             info.description
         );
     } else {
@@ -64,11 +63,10 @@ fn print_all_help() {
             "\n\
             {}\n\
             {}\n\
-            {}\n\
             {}\n",
-            info.title.bright_white(),
+            //info.title.bright_white(),
             info.cmd_args.bright_blue(),
-            "-------------".on_blue().bold(),
+            "-------------".green().bold(),
             info.description
         );
         println!(); // add an extra newline between commands
