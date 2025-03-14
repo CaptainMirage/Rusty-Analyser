@@ -39,9 +39,14 @@ fn prompter_fn() {
 fn print_command_help(command: &String) {
     if let Some(info) = COMMAND_DESCRIPTIONS.get(command.as_str()) {
         print!(
-            "\n{}\n-------------\n{}\n",
+            "\n\
+            {}\n\
+            {}\n\
+            {}\n\
+            {}\n",
             info.title.bright_white(),
-            // info.cmd_args,
+            "-------------".green().bold(),
+            info.cmd_args.bright_blue(),
             info.description
         );
     } else {
@@ -56,8 +61,14 @@ fn print_all_help() {
 
     for (_, info) in COMMAND_DESCRIPTIONS.iter() {
         print!(
-            "\n{}\n-------------\n{}",
+            "\n\
+            {}\n\
+            {}\n\
+            {}\n\
+            {}\n",
             info.title.bright_white(),
+            info.cmd_args.bright_blue(),
+            "-------------".on_blue().bold(),
             info.description
         );
         println!(); // add an extra newline between commands
