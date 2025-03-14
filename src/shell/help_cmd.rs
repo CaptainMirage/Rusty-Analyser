@@ -72,38 +72,38 @@ lazy_static! {
         add_command!{
             m, "largest-files",
             title      : "Largest Files",
-            cmd_args   : "",
+            cmd_args   : "largest-files [drive]",
             description: "Shows the top 10 largest files",
         }
         add_command!{
             m, "largest folder",
             title      : "Largest Folder",
-            cmd_args   : "",
+            cmd_args   : "largest-folder [drive]",
             description: "Shows the top 10 largest folders up to 3 levels deep \n\
                         Excludes hidden folders (those starting with '.')",
         }
         add_command!{
             m, "recent-large-files",
             title      : "Recent Large Files",
-            cmd_args   : "",
+            cmd_args   : "recent-large-files [drive]",
             description: "Shows most recent files within last 30 days that are large",
         }
         add_command!{
             m, "old-large-files",
             title      : "Old Large Files",
-            cmd_args   : "",
+            cmd_args   : "old-large-files [drive]",
             description: "Shows older than 6 months files that are your m- i mean large",
         }
         add_command!{
             m, "full-drive-analysis",
             title      : "Full Drive Analysis",
-            cmd_args   : "",
+            cmd_args   : "full-drive-analysis [drive]",
             description: "cant you read?",
         }
         add_command!{
             m, "empty-folders",
             title      : "Empty Folders",
-            cmd_args   : "",
+            cmd_args   : "empty-folders [drive]",
             description: "searches for empty folders and lists them all\
                         (not all empty folders should be deleted) \n\
                         if you're not sure just search the folder path and see if you can delete it"
