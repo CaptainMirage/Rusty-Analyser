@@ -66,7 +66,7 @@ lazy_static! {
         add_command!{
             m, "Error-680089",
             title      : "????????",
-            cmd_args   : "",
+            cmd_args   : "Error-680089",
             description: "",
         }
         add_command!{
