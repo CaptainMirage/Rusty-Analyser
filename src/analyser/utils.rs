@@ -275,3 +275,47 @@ pub fn tester_function() {
         false,
     );
 }
+
+pub fn display_boot_sequence() {
+    type_text("Initializing Analyzer...", 35, Some(400), true);
+
+    // Progress bar animation
+    let steps = ["[     ]", "[=    ]", "[==   ]", "[===  ]", "[==== ]", "[=====]"];
+    let messages = [
+        "booting Iconic Defibulizer",
+        "Connecting to Interdimensional Cable",
+        "Calibrating Detox Machine",
+        "Optimizing algorithms",
+        "Preparing Mind Wiper",
+        "Starting Time Device"
+    ];
+
+    for (step, message) in steps.iter().zip(messages.iter()) {
+        // Clear the current line before printing
+        print!("\r\x1B[K"); // ANSI escape code to clear the line
+        print!("{} {}", step, message);
+        stdout().flush().unwrap();
+        sleep(Duration::from_millis(600));
+    }
+
+    println!("\n");
+    sleep(Duration::from_millis(300));
+
+    // Status messages
+    let status_prefixes = [
+        "Iconic Defibulizer booted    [OK]",
+        "IC cable connected           [OK]",
+        "Detox Machine calibrated     [OK]",
+        "Algorithms optimized         [OK]",
+        "Mind Wiper ready             [OK]",
+        "Time Device running          [OK]"
+    ];
+
+    for prefix in status_prefixes {
+        // Print the prefix without a newline
+        type_text(prefix, 35, Some(400), true);
+        stdout().flush().unwrap();
+    }
+
+    type_text("\nAnalyzer ready.", 35, Some(400), true);
+}
