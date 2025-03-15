@@ -1,5 +1,5 @@
 use super::help_cmd::*;
-use crate::analyser::utils::{save_empty_folders_to_file, validate_and_format_drive};
+use crate::utility::utils::{save_empty_folders_to_file, validate_and_format_drive};
 use crate::analyser::{StorageAnalyser, constants::*};
 use colored::{ColoredString, Colorize};
 use lazy_static::lazy_static;
