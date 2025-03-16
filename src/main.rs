@@ -2,7 +2,7 @@ mod analyser;
 mod shell;
 mod utility;
 // use crate::Analyser::utils::tester_function;
-use crate::analyser::constants::*;
+use utility::constants::*;
 use crate::utility::funzy::{display_boot_sequence, type_text};
 
 #[cfg(feature = "DEBUG_MODE")]
