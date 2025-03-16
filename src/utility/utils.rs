@@ -1,12 +1,7 @@
 use crate::DATE_FORMAT;
-use crate::analyser::{constants::*, types::*};
+use crate::analyser::types::*;
 use chrono::{DateTime, TimeZone, Utc};
-use colored::{ColoredString, Colorize};
-use rand::Rng;
 use rayon::prelude::*;
-use std::io::stdout;
-use std::thread::sleep;
-use std::time::Duration;
 use std::{
     collections::HashMap,
     io,
@@ -15,10 +10,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 use std::{
-    fs::{OpenOptions, create_dir_all},
+    fs::{create_dir_all, OpenOptions},
     time::{SystemTime, UNIX_EPOCH},
 };
 use walkdir::WalkDir;
+use crate::utility::constants::*;
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
