@@ -1,4 +1,5 @@
 use super::{constants::*, types::*};
+use crate::utility::utils::*;
 use chrono::{Duration, NaiveDateTime, Utc};
 use rayon::prelude::*;
 #[cfg(target_os = "windows")]
@@ -7,9 +8,7 @@ use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     io::{self, Error},
-    path::Path
-
-    ,
+    path::Path,
 };
 use walkdir::WalkDir;
 #[cfg(target_os = "windows")]
@@ -17,7 +16,6 @@ use winapi::um::{
     fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
     winbase::DRIVE_FIXED,
 };
-use crate::utility::utils::*;
 
 pub struct StorageAnalyser {
     pub drives: Vec<String>,

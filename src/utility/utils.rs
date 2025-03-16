@@ -1,6 +1,7 @@
-use crate::analyser::{constants::*, types::*};
 use crate::DATE_FORMAT;
+use crate::analyser::{constants::*, types::*};
 use chrono::{DateTime, TimeZone, Utc};
+use colored::{ColoredString, Colorize};
 use rand::Rng;
 use rayon::prelude::*;
 use std::io::stdout;
@@ -18,7 +19,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use walkdir::WalkDir;
-use colored::{ColoredString, Colorize};
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
