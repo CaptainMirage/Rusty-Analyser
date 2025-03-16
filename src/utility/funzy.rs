@@ -1,17 +1,17 @@
 // literally just a file for fun functions to use
-use std::io::{stdout, Write};
-use std::thread::sleep;
-use std::time::Duration;
 use colored::Color::BrightWhite;
 use colored::Colorize;
 use rand::Rng;
+use std::io::{Write, stdout};
+use std::thread::sleep;
+use std::time::Duration;
 
 pub fn type_text(
     text: &str,
     base_speed_ms: u64,
     end_delay_ms: Option<u64>,
     natural: bool,
-    color: Option<&str>
+    color: Option<&str>,
 ) {
     let stdout = stdout();
     let mut handle = stdout.lock();
@@ -50,7 +50,10 @@ pub fn type_text(
         if chars[i] == '\x1B' {
             // Find the end of the ANSI sequence
             let mut j = i;
-            while j < chars.len() && !(chars[j] >= 'A' && chars[j] <= 'Z') && !(chars[j] >= 'a' && chars[j] <= 'z') {
+            while j < chars.len()
+                && !(chars[j] >= 'A' && chars[j] <= 'Z')
+                && !(chars[j] >= 'a' && chars[j] <= 'z')
+            {
                 j += 1;
             }
             if j < chars.len() {
@@ -82,7 +85,10 @@ pub fn type_text(
             }
 
             // Check if the current position corresponds to a pause character
-            if i > 0 && i - 1 < text.len() && pause_chars.contains(&text.chars().nth(i - 1).unwrap_or(' ')) {
+            if i > 0
+                && i - 1 < text.len()
+                && pause_chars.contains(&text.chars().nth(i - 1).unwrap_or(' '))
+            {
                 char_delay = char_delay.saturating_add(rng.random_range(100..400));
             }
 
@@ -125,7 +131,7 @@ pub fn tester_function() {
         70,
         None,
         true,
-        None
+        None,
     );
 
     // Using the simplified function for quick usage
@@ -139,7 +145,7 @@ pub fn tester_function() {
         60,
         Some(700),
         true,
-        None
+        None,
     );
 
     println!("\nMechanical typing (constant speed):");
@@ -148,7 +154,7 @@ pub fn tester_function() {
         60,
         Some(700),
         false,
-        None
+        None,
     );
 }
 
@@ -164,7 +170,7 @@ pub fn display_boot_sequence() {
         "Calibrating Detox Machine",
         "Optimizing algorithms",
         "Preparing Mind Wiper",
-        "Starting Time Device"
+        "Starting Time Device",
     ];
 
     for (step, message) in steps.iter().zip(messages.iter()) {
@@ -185,7 +191,7 @@ pub fn display_boot_sequence() {
         "Detox Machine calibrated     [OK]",
         "Algorithms optimized         [OK]",
         "Mind Wiper ready             [OK]",
-        "Time Device running          [OK]"
+        "Time Device running          [OK]",
     ];
 
     for each_status in status {
@@ -194,5 +200,6 @@ pub fn display_boot_sequence() {
         stdout().flush().unwrap();
     }
 
-    type_text("\nAnalyzer ready!", 35, Some(400), true, Some("bright_white"));
+    type_text("\nAnalyzer ready!",
+              35, Some(400), true, Some("bright_white"));
 }
