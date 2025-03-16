@@ -1,6 +1,6 @@
 [package]
 name = "Rusty-Analyser"
-version = "0.2.6-beta"
+version = "0.2.9-beta"
 edition = "2024"
 
 [dependencies]
