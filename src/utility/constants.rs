@@ -8,3 +8,6 @@ pub const MIN_FILE_TYPE_SIZE_GB: f64 = 0.01;
 
 // time format
 pub const DATE_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
+// cargo.toml shit
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
