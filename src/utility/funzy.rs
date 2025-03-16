@@ -5,6 +5,7 @@ use rand::Rng;
 use std::io::{Write, stdout};
 use std::thread::sleep;
 use std::time::Duration;
+use crate::VERSION;
 
 pub fn type_text(
     text: &str,
@@ -200,6 +201,6 @@ pub fn display_boot_sequence() {
         stdout().flush().unwrap();
     }
 
-    type_text("\nAnalyzer ready!",
+    type_text(&format!("\nAnalyzer v{VERSION} ready!"),
               35, Some(400), true, Some("bright_white"));
 }
