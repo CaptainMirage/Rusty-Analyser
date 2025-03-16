@@ -1,16 +1,13 @@
 use super::help_cmd::*;
-use crate::analyser::{StorageAnalyser, constants::*};
+use crate::analyser::StorageAnalyser;
 use crate::utility::utils::{save_empty_folders_to_file, validate_and_format_drive};
-use colored::{ColoredString, Colorize};
-use lazy_static::lazy_static;
-use rayon::max_num_threads;
+use colored::Colorize;
 use std::{
     env,
     io::{self, Write},
     process,
 };
 use whoami::fallible;
-
 macro_rules! vfd {
     // Pattern to accept an arbitrary closure block
     ($drive:expr, $action:expr) => {
