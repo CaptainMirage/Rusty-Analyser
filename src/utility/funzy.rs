@@ -124,46 +124,59 @@ pub fn type_text_simple(text: &str, speed_ms: u64) {
     type_text(text, speed_ms, Some(500), true, None);
 }
 
-#[allow(dead_code)]
-pub fn tester_function() {
-    // Natural typing effect with default end delay
-    type_text(
-        "Hello, this is a demonstration of the natural typing effect! It mimics how a real person would type.",
-        70,
-        None,
-        true,
-        None,
-    );
+#[cfg(target_os = "windows")]
+unsafe extern "C" {
+    fn _kbhit() -> i32;
+    fn _getch() -> i32;
+}
 
-    // Using the simplified function for quick usage
-    println!("\nUsing the simplified function:");
-    type_text_simple("This uses the simplified function with natural typing.", 70);
+#[cfg(target_os = "windows")]
+fn key_pressed_skip() -> bool {
+    unsafe {
+        if _kbhit() != 0 {
+            let ch = _getch();
+            let key = ch as u8 as char;
+            return key == 'x' || key == 'X';
+        }
+    }
+    false
+}
 
-    // Compare natural vs mechanical typing
-    println!("\nNatural typing (with randomness and pauses):");
-    type_text(
-        "The quick brown fox jumps over the lazy dog. How natural does this feel?",
-        60,
-        Some(700),
-        true,
-        None,
-    );
+// Helper to check and print skip message if the skip key is pressed.
+#[cfg(target_os = "windows")]
+fn maybe_skip() -> bool {
+    if key_pressed_skip() {
+        println!("\nSkipping boot animation...\n");
+        true
+    } else {
+        false
+    }
+}
 
-    println!("\nMechanical typing (constant speed):");
-    type_text(
-        "The quick brown fox jumps over the lazy dog. Notice the difference?",
-        60,
-        Some(700),
-        false,
-        None,
-    );
+// Sleep in 50ms slices while checking for the skip key.
+#[cfg(target_os = "windows")]
+fn sleep_with_key_check(total_ms: u64) -> bool {
+    let mut slept = 0;
+    let slice = 50;
+    while slept < total_ms {
+        let delay = std::cmp::min(slice, total_ms - slept);
+        sleep(Duration::from_millis(delay));
+        slept += delay;
+        if key_pressed_skip() {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn display_boot_sequence() {
     type_text("Initializing Analyzer...",
               35, Some(400), true, Some("bright_white"));
 
-    // Progress bar animation
+    if maybe_skip() {
+        return;
+    }
+
     let steps = ["[     ]", "[=    ]", "[==   ]", "[===  ]", "[==== ]", "[=====]"];
     let messages = [
         "booting Ionic Defibulizer",
@@ -175,17 +188,21 @@ pub fn display_boot_sequence() {
     ];
 
     for (step, message) in steps.iter().zip(messages.iter()) {
-        // Clear the current line before printing
-        print!("\r\x1B[K"); // ANSI escape code to clear the line
+        print!("\r\x1B[K");
         print!("{} {}", step.green(), message.bright_green());
         stdout().flush().unwrap();
-        sleep(Duration::from_millis(600));
+
+        if sleep_with_key_check(600) {
+            println!();
+            return;
+        }
     }
 
     println!("\n");
-    sleep(Duration::from_millis(300));
+    if sleep_with_key_check(300) {
+        return;
+    }
 
-    // Status messages
     let status = [
         "Ionic Defibulizer booted     [OK]",
         "ID Cable connected           [OK]",
@@ -196,9 +213,11 @@ pub fn display_boot_sequence() {
     ];
 
     for each_status in status {
-        // Print the prefix without a newline
         type_text(each_status, 35, Some(400), true, Some("bright_cyan"));
         stdout().flush().unwrap();
+        if maybe_skip() {
+            return;
+        }
     }
 
     type_text(&format!("\nAnalyzer v{VERSION} ready!"),
