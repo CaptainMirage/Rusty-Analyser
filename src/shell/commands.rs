@@ -173,7 +173,7 @@ pub fn bash_commands() {
             }
 
             _ => {
-                println!("{}: not found", command[0]);
+                println!("{}: command not found", command[0]);
             }
         }
         input.clear();
