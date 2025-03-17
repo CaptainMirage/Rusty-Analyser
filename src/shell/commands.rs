@@ -167,7 +167,7 @@ pub fn bash_commands() {
                             save_empty_folders_to_file(&empty_folders)?;
                             Ok(())
                         }),
-                        None => println!("No drive provided for empty-folders command."),
+                        None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
                     }
                 }
             }
