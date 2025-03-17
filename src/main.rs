@@ -33,7 +33,7 @@ fn main() -> std::io::Result<()> {
         "oh wa- hey, welcome to this program, which one was it?.. oh yea the analyser\n\
         well have fun with the commands, they all take around a million years to finish running\n",
         35, Some(400), true, None);
-    // display_boot_sequence();
+    display_boot_sequence();
 
     shell::bash_commands();
     Ok(())
