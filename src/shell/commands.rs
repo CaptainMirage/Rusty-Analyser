@@ -9,11 +9,11 @@ use std::{
 };
 use whoami::fallible;
 macro_rules! vfd {
-    // Pattern to accept an arbitrary closure block
+    // pattern to accept an arbitrary closure block
     ($drive:expr, $action:expr) => {
         validate_and_format_drive($drive, $action)
     };
-    // Pattern for the simpler case of passing an instance and method name
+    // pattern for the simpler case of passing an instance and method name
     ($drive:expr, $instance:expr, $method:ident) => {
         validate_and_format_drive($drive, |d| $instance.$method(d))
     };
@@ -105,7 +105,7 @@ pub fn bash_commands() {
                         println!("{}", words.join(" "))
                     }
                 }
-                None => println!(), // Just print newline if no arguments given
+                None => println!(), // prints a newline if no arguments given
             },
             ["pwd"] => match env::current_dir() {
                 Ok(path) => println!("{}", path.display()),
