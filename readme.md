@@ -145,7 +145,7 @@ Searches for empty folders on the specified drive. The `-delete` flag is reserve
 This project is licensed under the [MIT License](LICENSE).
 
 ## Attribution
-While the MIT License doesn't require it, if you use this tool or its code, a credit would be appreciated! You can provide attribution in any of these ways:
+While the MIT License doesn't require it, if you use this tool or its code, a credit would be appreciated! You can provide attribution in any way you wish
 
 Example attribution:
 ```markdown
