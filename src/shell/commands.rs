@@ -119,37 +119,58 @@ pub fn bash_commands() {
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, print_drive_space_overview),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["file-type-dist", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, print_file_type_distribution),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["largest-files", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, print_largest_files),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["largest-folder", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, print_largest_folders),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["recent-large-files", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, print_recent_large_files),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["old-large-files", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, print_old_large_files),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["full-drive-analysis", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, analyser, analyze_drive),
-                None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                None => println!(
+                    "drive letter required. Usage: {} [drive]",
+                    command.get(0).unwrap()
+                ),
             },
 
             ["empty-folders", ..] => {
@@ -167,7 +188,10 @@ pub fn bash_commands() {
                             save_empty_folders_to_file(&empty_folders)?;
                             Ok(())
                         }),
-                        None => println!("drive letter required. Usage: {} [drive]", command.get(0).unwrap()),
+                        None => println!(
+                            "drive letter required. Usage: {} [drive]",
+                            command.get(0).unwrap()
+                        ),
                     }
                 }
             }

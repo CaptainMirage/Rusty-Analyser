@@ -1,11 +1,11 @@
 // literally just a file for fun functions to use
+use crate::VERSION;
 use colored::Color::BrightWhite;
 use colored::Colorize;
 use rand::Rng;
 use std::io::{Write, stdout};
 use std::thread::sleep;
 use std::time::Duration;
-use crate::VERSION;
 
 pub fn type_text(
     text: &str,

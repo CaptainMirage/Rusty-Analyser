@@ -1,4 +1,5 @@
 use super::types::*;
+use crate::utility::constants::*;
 use crate::utility::utils::*;
 use chrono::{Duration, NaiveDateTime, Utc};
 use rayon::prelude::*;
@@ -16,7 +17,6 @@ use winapi::um::{
     fileapi::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDriveStringsW},
     winbase::DRIVE_FIXED,
 };
-use crate::utility::constants::*;
 
 pub struct StorageAnalyser {
     pub drives: Vec<String>,
