@@ -2,8 +2,8 @@ mod analyser;
 mod shell;
 mod utility;
 // use crate::Analyser::utils::tester_function;
+use crate::utility::funzy::display_boot_sequence;
 use utility::constants::*;
-use crate::utility::funzy::{display_boot_sequence};
 
 #[cfg(feature = "DEBUG_MODE")]
 fn debug_test() -> std::io::Result<()> {

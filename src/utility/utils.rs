@@ -1,5 +1,6 @@
 use crate::DATE_FORMAT;
 use crate::analyser::types::*;
+use crate::utility::constants::*;
 use chrono::{DateTime, TimeZone, Utc};
 use rayon::prelude::*;
 use std::{
@@ -10,11 +11,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 use std::{
-    fs::{create_dir_all, OpenOptions},
+    fs::{OpenOptions, create_dir_all},
     time::{SystemTime, UNIX_EPOCH},
 };
 use walkdir::WalkDir;
-use crate::utility::constants::*;
 
 // helper function to convert system time to formatted string
 pub fn system_time_to_string(system_time: SystemTime) -> String {
