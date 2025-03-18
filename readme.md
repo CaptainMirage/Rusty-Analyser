@@ -27,7 +27,8 @@ but that depends on the drive speed since it uses I/O scanning.
 - [ ] auto complete commands
 - [ ] make the ability to turn off the boot animation
 - [ ] cache scans
-- [ ] add a re-scan option 
+- [ ] add a re-scan option
+- [ ] add an icon for the program (somehow)
 
 ## Commands
 
