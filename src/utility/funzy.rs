@@ -175,12 +175,17 @@ fn sleep_with_key_check(total_ms: u64) -> bool {
 }
 
 pub fn display_boot_sequence() {
-    type_text("Initializing Analyzer...",
-              35, Some(400), true, Some("bright_white"));
-
+    type_text(
+        "oh wa- hey, welcome to this program, which one was it?.. oh yea the analyser\n\
+        well have fun with the commands, they all take around a million years to finish running\n",
+        35, Some(400), true, None);
+    
     if maybe_skip() {
         return;
     }
+    
+    type_text("Initializing Analyser...",
+              35, Some(400), true, Some("bright_white"));
 
     let steps = ["[     ]", "[=    ]", "[==   ]", "[===  ]", "[==== ]", "[=====]"];
     let messages = [
@@ -225,6 +230,6 @@ pub fn display_boot_sequence() {
         }
     }
 
-    type_text(&format!("\nAnalyzer v{VERSION} ready!"),
+    type_text(&format!("\nAnalyser v{VERSION} ready!"),
               35, Some(400), true, Some("bright_white"));
 }
