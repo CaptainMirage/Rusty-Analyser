@@ -3,7 +3,7 @@ mod shell;
 mod utility;
 // use crate::Analyser::utils::tester_function;
 use utility::constants::*;
-use crate::utility::funzy::{display_boot_sequence, type_text};
+use crate::utility::funzy::{display_boot_sequence};
 
 #[cfg(feature = "DEBUG_MODE")]
 fn debug_test() -> std::io::Result<()> {
@@ -29,10 +29,6 @@ fn main() -> std::io::Result<()> {
     }
 
     // where the main code will run
-    type_text(
-        "oh wa- hey, welcome to this program, which one was it?.. oh yea the analyser\n\
-        well have fun with the commands, they all take around a million years to finish running\n",
-        35, Some(400), true, None);
     display_boot_sequence();
 
     shell::bash_commands();
