@@ -20,7 +20,7 @@ but that depends on the drive speed since it uses I/O scanning.
 - **Bash system:** the whole project is in a bash like system, custom-made
 
 ## Coming Features
-- [ ] a more talkative terminal
+- [x] a more talkative terminal
 - [ ] faster scans with NTFS scanning 
 (likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.)
 - [ ] smart commands
@@ -137,7 +137,7 @@ Searches for empty folders on the specified drive. The `-delete` flag is reserve
 
 ## Technologies Used
 
-- just check the [cargo.toml](https://github.com/CaptainMirage/Rusty-Analyser/blob/master/Cargo.toml) file :T
+- just check the [cargo.toml](https://github.com/CaptainMirage/Rusty-Analyser/blob/master/Cargo.toml) file :I
 
 ## License
 
