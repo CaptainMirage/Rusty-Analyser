@@ -16,7 +16,7 @@ pub fn type_text(
 ) {
     let stdout = stdout();
     let mut handle = stdout.lock();
-    let mut rng = rand::rng(); // Fix for rand::rng()
+    let mut rng = rand::rng();
 
     // characters that typically cause a slight natural pause when typing
     let pause_chars = ['.', '!', '?', ',', ';', ':', '-', ')', '}', ']'];
