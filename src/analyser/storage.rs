@@ -303,6 +303,14 @@ impl StorageAnalyser {
         }
     }
 
+    pub fn rescan_drive(&mut self, drive: &str) -> io::Result<()> {
+        // Clear any previously cached data for this drive.
+        self.file_cache.remove(drive);
+        self.folder_cache.remove(drive);
+        // Force a re-scan by calling collect_and_cache_files.
+        collect_and_cache_files(drive, &mut self.file_cache, &mut self.folder_cache)
+    }
+
     
     // -- public printing functions -- //
 
