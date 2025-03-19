@@ -1,6 +1,6 @@
 use super::help_cmd::*;
 use crate::analyser::StorageAnalyser;
-use crate::utility::utils::{save_empty_folders_to_file, validate_and_format_drive};
+use crate::utility::utils::{save_empty_folders_to_file, validate_and_format_drive, time_command};
 use colored::Colorize;
 use std::{
     env,
@@ -196,10 +196,21 @@ pub fn bash_commands() {
                 }
             }
 
+            ["rescan", ..] => match command.get(1) {
+                Some(drive) => vfd!(drive, |d| {
+                    time_command(|| {
+                        analyser.rescan_drive(d)?;
+                        println!("Rescan complete for drive {}", d);
+                        Ok(())
+                    })
+                }),
+                None => println!("Drive letter required. Usage: rescan [drive]"),
+            },
+            
             _ => {
                 println!("{}: command not found", command[0]);
             }
-        }
+        }   
         input.clear();
         prompter_fn();
     }
