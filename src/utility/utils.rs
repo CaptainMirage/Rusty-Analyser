@@ -104,115 +104,64 @@ pub fn collect_and_cache_files(
         return Ok(());
     }
 
-    println!("No cache found, scanning {}...", drive);
+    println!("No cache found, scanning..");
 
-    // Skip patterns - common folders with many small files that slow scans
-    let skip_patterns = [
-        "Windows\\WinSxS",
-        "Windows\\Installer",
-        "Program Files\\WindowsApps",
-        "$Recycle.Bin",
-        "System Volume Information",
-    ];
+    let file_cache_arc = Arc::new(Mutex::new(Vec::new()));
+    let folder_cache_arc = Arc::new(Mutex::new(Vec::new()));
 
-    // Create batched processing system
-    const BATCH_SIZE: usize = 1000;
-    let files_batches = Arc::new(Mutex::new(Vec::new()));
-    let folder_sizes = Arc::new(Mutex::new(HashMap::<String, (u64, usize)>::new())); // (size, file_count)
-
-    // Create a thread pool for processing batches
-    let _pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(num_cpus::get())
-        .build()
-        .unwrap();
-
-    // Single-pass file system walk
-    let entries: Vec<_> = WalkDir::new(drive)
-        .follow_links(false)
-        .same_file_system(true)
+    let files: Vec<FileInfo> = WalkDir::new(drive)
         .into_iter()
         .par_bridge()
         .filter_map(Result::ok)
-        .filter(|entry| {
-            let path_str = entry.path().to_string_lossy();
-            !skip_patterns.iter().any(|pattern| path_str.contains(pattern))
+        .filter(|e| e.file_type().is_file())
+        .map(|entry| {
+            let metadata = entry.metadata().ok()?;
+            Some(FileInfo {
+                full_path: entry.path().to_string_lossy().to_string(),
+                size_mb: metadata.len() as f64 / MB_TO_BYTES,
+                last_modified: metadata.modified().ok().map(system_time_to_string),
+                last_accessed: metadata.accessed().ok().map(system_time_to_string),
+            })
         })
+        .flatten()
         .collect();
 
-    // Process entries in parallel batches
-    entries.par_chunks(BATCH_SIZE).for_each(|batch| {
-        let mut local_files = Vec::with_capacity(batch.len());
-        let mut local_folders = HashMap::new();
-
-        for entry in batch {
-            let path = entry.path();
-
-            if entry.file_type().is_file() {
-                if let Ok(metadata) = entry.metadata() {
-                    let file_size = metadata.len();
-                    // Add file to local files collection
-                    local_files.push(FileInfo {
-                        full_path: path.to_string_lossy().to_string(),
-                        size_mb: file_size as f64 / MB_TO_BYTES,
-                        last_modified: metadata.modified().ok().map(system_time_to_string),
-                        last_accessed: metadata.accessed().ok().map(system_time_to_string),
-                    });
-
-                    // Update folder sizes for all parent folders
-                    let mut current = path;
-                    while let Some(parent) = current.parent() {
-                        if parent.as_os_str().is_empty() {
-                            break;
-                        }
-                        let parent_path = parent.to_string_lossy().to_string();
-                        let entry = local_folders.entry(parent_path).or_insert((0, 0));
-                        entry.0 += file_size;
-                        entry.1 += 1;
-                        current = parent;
-                    }
-                }
-            }
-        }
-
-        // Merge local results into global collections
-        let mut files_lock = files_batches.lock().unwrap();
-        files_lock.push(local_files);
-
-        let mut folder_lock = folder_sizes.lock().unwrap();
-        for (folder, (size, count)) in local_folders {
-            let entry = folder_lock.entry(folder).or_insert((0, 0));
-            entry.0 += size;
-            entry.1 += count;
-        }
-    });
-
-    // Combine all file batches
-    let mut all_files = Vec::new();
-    for batch in Arc::try_unwrap(files_batches).unwrap().into_inner().unwrap() {
-        all_files.extend(batch);
+    {
+        let mut cache = file_cache_arc.lock().unwrap();
+        cache.extend(files);
     }
 
-    // Convert folder size map to the expected format
-    let folder_data = Arc::try_unwrap(folder_sizes)
-        .unwrap()
-        .into_inner()
-        .unwrap()
+    let folders: Vec<FolderSize> = WalkDir::new(drive)
+        .min_depth(1)
+        .max_depth(3)
         .into_iter()
-        .filter(|(path, _)| path.starts_with(drive))
-        .map(|(folder, (size, count))| {
-            FolderSize {
-                folder,
-                size_gb: size as f64 / GB_TO_BYTES,
-                file_count: count,
-            }
-        })
+        .filter_map(Result::ok)
+        .filter(|e| e.file_type().is_dir())
+        .filter_map(|entry| calculate_folder_size(entry.path()).ok())
         .collect();
 
-    // Store results in cache
-    file_cache.insert(drive.to_string(), all_files);
-    folder_cache.insert(drive.to_string(), folder_data);
+    {
+        let mut cache = folder_cache_arc.lock().unwrap();
+        cache.extend(folders);
+    }
 
-    println!("Scanning complete, cached files and folders");
+    println!("Scanning complete..");
+    file_cache.insert(
+        drive.to_string(),
+        Arc::try_unwrap(file_cache_arc)
+            .unwrap()
+            .into_inner()
+            .unwrap(),
+    );
+    folder_cache.insert(
+        drive.to_string(),
+        Arc::try_unwrap(folder_cache_arc)
+            .unwrap()
+            .into_inner()
+            .unwrap(),
+    );
+    println!("Caching files and folders..");
+
     Ok(())
 }
 
