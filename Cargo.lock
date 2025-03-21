@@ -6,7 +6,6 @@ version = 4
 name = "Rusty-Analyser"
 version = "0.2.9-beta"
 dependencies = [
- "byteorder",
  "chrono",
  "colored",
  "indexmap",
