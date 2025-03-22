@@ -1,16 +1,12 @@
 mod analyser;
 mod shell;
 mod utility;
-// use crate::Analyser::utils::tester_function;
-use crate::utility::funzy::display_boot_sequence;
+mod scanner;
+// use crate::utility::funzy::display_boot_sequence;
 use utility::constants::*;
 
 #[cfg(feature = "DEBUG_MODE")]
 fn debug_test() -> std::io::Result<()> {
-    let mut Analyser = StorageAnalyser::new();
-    Analyser.print_recent_large_files("C:\\")?;
-    Analyser.print_old_large_files("C:\\")?;
-    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
@@ -29,7 +25,7 @@ fn main() -> std::io::Result<()> {
     }
 
     // where the main code will run
-    display_boot_sequence();
+    //display_boot_sequence();
 
     shell::bash_commands();
     Ok(())
