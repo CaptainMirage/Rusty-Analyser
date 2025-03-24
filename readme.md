@@ -123,6 +123,8 @@ Searches for empty folders on the specified drive. The `-delete` flag is reserve
 
 ### Build from Source
 
+side note : im a dumbass that likes to push everything he does so if the project is somehow broken when ur cloning it its not my fault, its CaptainMirages fault
+
 1. **Clone the repository:**
 
    ```bash
