@@ -109,7 +109,7 @@ impl StorageAnalyser {
     
     // -- private calculation functions -- //
 
-    // uses Windows API to get drive space information
+    /// uses Windows API to get drive space information
     fn get_drive_space(&self, drive: &str) -> io::Result<DriveAnalysis> {
         use winapi::um::winnt::ULARGE_INTEGER;
         let mut free_bytes_available: ULARGE_INTEGER = unsafe { std::mem::zeroed() };
@@ -354,8 +354,9 @@ impl StorageAnalyser {
         Ok(())
     }
 
-    // returns largest folders up to 3 levels deep
-    // excludes hidden folders (those starting with '.')
+    /// returns largest folders up to 3 levels deep
+    /// 
+    /// excludes hidden folders (those starting with '.')
     pub fn print_largest_folders(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Largest Folders (Top 10) ---");
 
