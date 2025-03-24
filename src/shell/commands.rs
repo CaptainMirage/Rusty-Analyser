@@ -8,6 +8,8 @@ use std::{
     process,
 };
 use whoami::fallible;
+use crate::analyser;
+
 macro_rules! vfd {
     // pattern to accept an arbitrary closure block
     ($drive:expr, $action:expr) => {
@@ -126,7 +128,7 @@ pub fn bash_commands() {
             },
 
             ["file-type-dist", ..] => match command.get(1) {
-                Some(drive) => vfd!(drive, analyser, print_file_type_distribution),
+                Some(drive) => time_command(|| { vfd!(drive, analyser, print_file_type_distribution)}),
                 None => println!(
                     "drive letter required. Usage: {} [drive]",
                     command.get(0).unwrap()
@@ -196,7 +198,12 @@ pub fn bash_commands() {
                 }
             }
 
-            ["rescan", ..] => match command.get(1) {
+        ["drive-space-ntfs", ..] => match command.get(1) {
+            Some(drive) => analyser::ntfs_explorer::print_drive_space(drive),
+            None => println!("Drive letter required. Usage: drive-space [drive]"),
+        },
+
+        ["rescan", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, |d| {
                     time_command(|| {
                         analyser.rescan_drive(d)?;

@@ -83,7 +83,7 @@ lazy_static! {
                         Excludes hidden folders (those starting with '.')",
         }
         add_command!{
-            m, "recent-large-files",
+                m, "recent-large-files",
             title      : "Recent Large Files",
             cmd_args   : "recent-large-files [drive]",
             description: "Shows most recent files within last 30 days that are large",
