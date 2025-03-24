@@ -2,4 +2,3 @@
 pub mod constants;
 pub mod funzy;
 pub mod utils;
-pub mod scanner;
