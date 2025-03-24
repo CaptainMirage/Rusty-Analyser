@@ -198,11 +198,6 @@ pub fn bash_commands() {
                 }
             }
 
-        ["drive-space-ntfs", ..] => match command.get(1) {
-            Some(drive) => analyser::ntfs_explorer::print_drive_space(drive),
-            None => println!("Drive letter required. Usage: drive-space [drive]"),
-        },
-
         ["rescan", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, |d| {
                     time_command(|| {
