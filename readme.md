@@ -21,8 +21,8 @@ but that depends on the drive speed since it uses I/O scanning.
 
 ## Coming Features
 - [x] a more talkative terminal
-- [ ] faster scans with NTFS scanning 
-(likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.)
+- [ ] faster scans with NTFS scanning
+(likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.) (in progress..)
 - [ ] smart commands
 - [ ] auto complete commands
 - [ ] make the ability to turn off the boot animation
