@@ -1,15 +1,15 @@
 mod analyser;
 mod shell;
 mod utility;
-mod scanner;
-// use crate::utility::funzy::display_boot_sequence;
-use utility::constants::*;
+use crate::{
+    utility::{
+        funzy::display_boot_sequence,
+        constants::*
+    },
 
-#[cfg(feature = "DEBUG_MODE")]
-fn debug_test() -> std::io::Result<()> {
-}
+};
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>>  {
     #[cfg(debug_assertions)]
     {
         println!("--- WARNING ---");
@@ -17,16 +17,14 @@ fn main() -> std::io::Result<()> {
         println!("if you are a normal user, consider using cargo run --release\n\n\n");
     }
 
-    #[cfg(feature = "DEBUG_MODE")]
-    {
-        println!("--- WARNING ---");
-        println!("DEBUG MODE : Running debug function!");
-        return debug_test();
+    let flag: bool = true;
+    if flag {
+        // where the main code will run
+        display_boot_sequence();
+
+        shell::bash_commands();
     }
 
-    // where the main code will run
-    //display_boot_sequence();
-
-    shell::bash_commands();
+    
     Ok(())
 }
