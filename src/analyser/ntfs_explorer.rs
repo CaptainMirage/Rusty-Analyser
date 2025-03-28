@@ -21,6 +21,24 @@ unsafe extern "system" {
     ) -> i32;
 }
 
+/// Returns true if the file name appears to be a concatenation of GUIDs.
+fn is_guid_concat(name: &str) -> bool {
+    // Heuristic: if the name starts with '{', contains "}{", and ends with '}'
+    // it likely is two GUIDs concatenated.
+    name.starts_with('{') && name.contains("}{") && name.ends_with('}')
+}
+
+/// Given a file name, returns a user-friendly name (filtering out GUID concatenations).
+fn filter_filename(name: &str) -> &str {
+    if name.is_empty() {
+        "No Name"
+    } else if is_guid_concat(name) {
+        "Unknown"
+    } else {
+        name
+    }
+}
+
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -93,6 +111,39 @@ fn scan_file_type_dist(drive_letter: &str) -> HashMap<String, u64> {
     distribution
 }
 
+fn scan_largest_files(drive_letter: &str) -> Vec<FileInfo> {
+    let drive_path = format!("\\\\.\\{}:", drive_letter);
+    let volume = Volume::new(&drive_path)
+        .expect(&format!("Failed to open volume at {}", drive_path));
+    let mft = Mft::new(volume)
+        .expect("Failed to create MFT from the volume");
+
+    let mut files: Vec<FileInfo> = Vec::new();
+    mft.iterate_files(|file| {
+        let mut info = FileInfo::new(&mft, file);
+        if !info.is_directory {
+            // Convert from clusters to bytes if needed:
+            files.push(info);
+        }
+    });
+    files.sort_by(|a, b| b.size.cmp(&a.size));
+    files
+}
+
+
+/// Prints the top 10 largest files on the specified drive.
+/// This function takes a drive letter (e.g. "C"), scans the drive for files,
+/// sorts them by size, and prints the file name (filtered) and size (formatted).
+pub fn print_largest_files(drive_letter: &str) {
+    let files = scan_largest_files(drive_letter);
+
+    println!("Largest Files on Drive {} (Top 10):", drive_letter);
+    for file in files.into_iter().take(10) {
+        // Filter the file name if it's a GUID concatenation.
+        let display_name = filter_filename(&file.name);
+        println!("{:<30} {}", display_name, format_size(file.size));
+    }
+}
 
 // -- public printing functions -- //
 
