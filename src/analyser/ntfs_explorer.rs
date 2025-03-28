@@ -21,14 +21,14 @@ unsafe extern "system" {
     ) -> i32;
 }
 
-/// Returns true if the file name appears to be a concatenation of GUIDs.
+/// returns true if the file name appears to be a concatenation of GUIDs.
 fn is_guid_concat(name: &str) -> bool {
     // Heuristic: if the name starts with '{', contains "}{", and ends with '}'
     // it likely is two GUIDs concatenated.
     name.starts_with('{') && name.contains("}{") && name.ends_with('}')
 }
 
-/// Given a file name, returns a user-friendly name (filtering out GUID concatenations).
+/// given a file name, returns a user-friendly name (filtering out GUID concatenations).
 fn filter_filename(name: &str) -> &str {
     if name.is_empty() {
         "No Name"
@@ -39,6 +39,9 @@ fn filter_filename(name: &str) -> &str {
     }
 }
 
+/// given a number in bytes, returns a compressed version of it
+/// 
+/// examples : `1505210368 --> 1.40 GB` | `815663130 --> 777.88 MB`
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -55,9 +58,46 @@ fn format_size(bytes: u64) -> String {
     }
 }
 
-/// Retrieves total, used, and free space (in bytes) for the given drive letter.
+/// Returns a folder key (as a String) from a full file path.
+/// It takes up to 5 directory components from the root.
+/// Example: 
+///
+/// "C:\Folder1\Folder2\Folder3\Folder4\Folder5\Folder6\file.txt" becomes
+/// "C:\Folder1\Folder2\Folder3\Folder4\Folder5".
+fn folder_key_from_path(full_path: &str) -> Option<String> {
+    let path = Path::new(full_path);
+    // Collect the components as strings.
+    let components: Vec<_> = path.components().map(|comp| comp.as_os_str().to_string_lossy()).collect();
+
+    if components.is_empty() {
+        return None;
+    }
+
+    // Take at most 3 folder components (including drive letter)
+    let take_count = if components.len() > 5 { 5 } else { components.len() };
+
+    // Join them back into a path string.
+    let folder = components[..take_count].join("\\");
+    Some(filter_filename(&folder).to_string())
+}
+
+/// Checks if a folder is hidden.
+/// You might need to customize this based on your project.
+/// For now, let's say if the folder name starts with a dot, it's hidden.
+fn is_hidden_folder(folder: &str) -> bool {
+    // Extract the final component and check if it starts with '.'
+    if let Some(name) = Path::new(folder).file_name().and_then(|s| s.to_str()) {
+        name.starts_with('.')
+    } else {
+        false
+    }
+}
+
+// -- scanning functions -- //
+
+/// retrieves total, used, and free space (in bytes) for the given drive letter.
 ///     
-/// Returns a tuple: (total_bytes, used_bytes, free_bytes).
+/// returns a tuple: (total_bytes, used_bytes, free_bytes).
 fn get_drive_space(drive: &str) -> Result<(u64, u64, u64), Box<dyn Error>> {
     // Construct a device path like "C:\".
     let path = format!("{}:\\", drive);
@@ -88,7 +128,7 @@ fn get_drive_space(drive: &str) -> Result<(u64, u64, u64), Box<dyn Error>> {
     }
 }
 
-/// Scans the NTFS drive and returns a HashMap with file extensions and their total sizes.
+/// scans the NTFS drive and returns a HashMap with file extensions and their total sizes.
 fn scan_file_type_dist(drive_letter: &str) -> HashMap<String, u64> {
     let drive_path = format!("\\\\.\\{}:", drive_letter);
     let volume = Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
@@ -130,22 +170,40 @@ fn scan_largest_files(drive_letter: &str) -> Vec<FileInfo> {
     files
 }
 
+/// Scans the NTFS drive and returns a HashMap of folder paths (up to 3 levels deep)
+/// and their total file sizes, excluding hidden folders.
+fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
+    let drive_path = format!("\\\\.\\{}:", drive_letter);
+    let volume = Volume::new(&drive_path)
+        .expect(&format!("Failed to open volume at {}", drive_path));
+    let mft = Mft::new(volume)
+        .expect("Failed to create MFT from the volume");
 
-/// Prints the top 10 largest files on the specified drive.
-/// This function takes a drive letter (e.g. "C"), scans the drive for files,
-/// sorts them by size, and prints the file name (filtered) and size (formatted).
-pub fn print_largest_files(drive_letter: &str) {
-    let files = scan_largest_files(drive_letter);
+    let mut folder_sizes: HashMap<String, u64> = HashMap::new();
 
-    println!("Largest Files on Drive {} (Top 10):", drive_letter);
-    for file in files.into_iter().take(10) {
-        // Filter the file name if it's a GUID concatenation.
-        let display_name = filter_filename(&file.name);
-        println!("{:<30} {}", display_name, format_size(file.size));
-    }
+    mft.iterate_files(|file| {
+        let info = FileInfo::new(&mft, file);
+        // Only consider non-directory files.
+        if !info.is_directory {
+            // Get the folder key from the file's path.
+            if let Some(path_str) = info.path.to_str() {
+                if let Some(folder) = folder_key_from_path(path_str) {
+                    // Skip hidden folders.
+                    if is_hidden_folder(&folder) {
+                        return;
+                    }
+                    // Aggregate file size into the folder.
+                    *folder_sizes.entry(folder).or_insert(0) += info.size;
+                }
+            }
+        }
+    });
+
+    folder_sizes
 }
 
-// -- public printing functions -- //
+
+// -- printing functions -- //
 
 pub fn print_drive_space(drive: &str) -> Result<(), Box<dyn Error>> {
     let (total, used, free) = get_drive_space(drive)?;
@@ -168,4 +226,29 @@ pub fn print_file_type_dist(drive_letter: &str) -> Result<(), Box<dyn Error>> {
         println!("{:<15}: {}", display_ext, format_size(*size));
     }
     Ok(())
+}
+
+pub fn print_largest_files(drive_letter: &str) {
+    let files = scan_largest_files(drive_letter);
+
+    println!("Largest Files on Drive {} (Top 10):", drive_letter);
+    for file in files.into_iter().take(10) {
+        // Filter the file name if it's a GUID concatenation.
+        let display_name = filter_filename(&file.name);
+        println!("{:<30} {}", display_name, file.size);
+    }
+}
+
+/// Prints the top 10 largest folders by total file size.
+pub fn print_largest_folders(drive_letter: &str) {
+    let folder_sizes = scan_largest_folders(drive_letter);
+
+    // Convert to vector and sort descending by size.
+    let mut folders: Vec<(&String, &u64)> = folder_sizes.iter().collect();
+    folders.sort_by(|a, b| b.1.cmp(a.1));
+
+    println!("Largest Folders on Drive {} (Top 10):", drive_letter);
+    for (folder, size) in folders.into_iter().take(60) {
+        println!("{:<50} {}", folder, format_size(*size));
+    }
 }
