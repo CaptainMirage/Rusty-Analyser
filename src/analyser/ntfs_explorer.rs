@@ -29,13 +29,13 @@ fn is_guid_concat(name: &str) -> bool {
 }
 
 /// given a file name, returns a user-friendly name (filtering out GUID concatenations).
-fn filter_filename(name: &str) -> &str {
+fn filter_filename(name: &str) -> String {
     if name.is_empty() {
-        "No Name"
+        "No Name".to_string()
     } else if is_guid_concat(name) {
-        "Unknown"
+        "GUID name".to_string()
     } else {
-        name
+        name.to_string()
     }
 }
 
@@ -64,21 +64,41 @@ fn format_size(bytes: u64) -> String {
 ///
 /// "C:\Folder1\Folder2\Folder3\Folder4\Folder5\Folder6\file.txt" becomes
 /// "C:\Folder1\Folder2\Folder3\Folder4\Folder5".
-fn folder_key_from_path(full_path: &str) -> Option<String> {
+fn folder_key_from_path(full_path: &str, drive_letter: &str, depth: usize) -> Option<String> {
     let path = Path::new(full_path);
-    // Collect the components as strings.
-    let components: Vec<_> = path.components().map(|comp| comp.as_os_str().to_string_lossy()).collect();
+    // Collect components as Strings.
+    let components: Vec<String> = path
+        .components()
+        .map(|comp| comp.as_os_str().to_string_lossy().into_owned())
+        .collect();
 
     if components.is_empty() {
         return None;
     }
 
-    // Take at most 3 folder components (including drive letter)
-    let take_count = if components.len() > 5 { 5 } else { components.len() };
+    // Limit the folder depth.
+    let take_count = if components.len() > depth { depth } else { components.len() };
+    let joined = components[..take_count].join("\\");
 
-    // Join them back into a path string.
-    let folder = components[..take_count].join("\\");
-    Some(filter_filename(&folder).to_string())
+    // Optionally remove the drive prefix (if present).
+    let drive_prefix = format!("\\\\.\\{}:\\", drive_letter);
+    let without_prefix = if joined.starts_with(&drive_prefix) {
+        joined.replacen(&drive_prefix, "", 1)
+    } else {
+        joined
+    };
+
+    // Split into components, transforming each one.
+    let transformed_components: Vec<String> = without_prefix
+        .split('\\')
+        .map(|comp| filter_filename(comp))
+        .collect();
+
+    if transformed_components.is_empty() {
+        None
+    } else {
+        Some(transformed_components.join("\\"))
+    }
 }
 
 /// Checks if a folder is hidden.
@@ -183,16 +203,12 @@ fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
 
     mft.iterate_files(|file| {
         let info = FileInfo::new(&mft, file);
-        // Only consider non-directory files.
         if !info.is_directory {
-            // Get the folder key from the file's path.
+            // Convert the file's PathBuf to &str.
             if let Some(path_str) = info.path.to_str() {
-                if let Some(folder) = folder_key_from_path(path_str) {
-                    // Skip hidden folders.
-                    if is_hidden_folder(&folder) {
-                        return;
-                    }
-                    // Aggregate file size into the folder.
+                if let Some(folder) = folder_key_from_path(path_str, drive_letter, 5) {
+                    // Skip hidden folders if needed, e.g., folders starting with a dot.
+                    // For now, we assume all folders are allowed.
                     *folder_sizes.entry(folder).or_insert(0) += info.size;
                 }
             }
@@ -235,7 +251,7 @@ pub fn print_largest_files(drive_letter: &str) {
     for file in files.into_iter().take(10) {
         // Filter the file name if it's a GUID concatenation.
         let display_name = filter_filename(&file.name);
-        println!("{:<30} {}", display_name, file.size);
+        println!("{:<30} {}", display_name, format_size(file.size));
     }
 }
 
@@ -248,7 +264,26 @@ pub fn print_largest_folders(drive_letter: &str) {
     folders.sort_by(|a, b| b.1.cmp(a.1));
 
     println!("Largest Folders on Drive {} (Top 10):", drive_letter);
-    for (folder, size) in folders.into_iter().take(60) {
+    for (folder, size) in folders.into_iter().take(10) {
         println!("{:<50} {}", folder, format_size(*size));
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_scanner() {
+        let files = scan_largest_folders("C");
+        assert!(!files.is_empty(), "Expected some files from drive C");
+    }
+
+    #[test]
+    fn test_printer() {
+        println!("\n\n");
+        print_largest_folders("C");
+
     }
 }
