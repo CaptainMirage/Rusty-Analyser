@@ -1,15 +1,21 @@
-use std::collections::HashMap;
-use std::error::Error;
-use std::ffi::OsStr;
-use std::fmt::format;
-use std::os::windows::ffi::OsStrExt;
-use std::ptr::null_mut;
+#![allow(dead_code)] #![allow(unused_mut)]
+use std::{
+    collections::HashMap,
+    error::Error,
+    ffi::OsStr,
+    fmt::format,
+    os::windows::ffi::OsStrExt,
+    ptr::null_mut,
+    io::{Read, Seek},
+    path::Path
+};
 use crate::utility::constants::GB_TO_BYTES;
-use std::io::{Read, Seek};
-use std::path::Path;
-use ntfs_reader::file_info::FileInfo;
-use ntfs_reader::mft::Mft;
-use ntfs_reader::volume::Volume;
+use ntfs_reader::{
+    file_info::FileInfo,
+    mft::Mft,
+    volume::Volume
+};
+use time::{Duration, OffsetDateTime};
 
 #[link(name = "kernel32")]
 unsafe extern "system" {
@@ -29,8 +35,8 @@ fn is_guid_concat(name: &str) -> bool {
 }
 
 /// given a file name, returns a user-friendly name (filtering out GUID concatenations).
-fn filter_filename(name: &str) -> String {
-    if name.is_empty() {
+pub fn filter_filename(name: &str, empty: bool) -> String  {
+    if name.is_empty() && empty {
         "No Name".to_string()
     } else if is_guid_concat(name) {
         "GUID name".to_string()
@@ -88,17 +94,23 @@ fn folder_key_from_path(full_path: &str, drive_letter: &str, depth: usize) -> Op
         joined
     };
 
-    // Split into components, transforming each one.
-    let transformed_components: Vec<String> = without_prefix
+    // Split into components and transform each one.
+    let mut transformed_components: Vec<String> = without_prefix
         .split('\\')
-        .map(|comp| filter_filename(comp))
+        .map(|comp| filter_filename(comp, false))
         .collect();
 
-    if transformed_components.is_empty() {
-        None
-    } else {
-        Some(transformed_components.join("\\"))
+    // Remove any leading empty component if it exists.
+    if let Some(first) = transformed_components.first() {
+        if first.is_empty() {
+            transformed_components.remove(0);
+        }
     }
+
+    // Join the components back together.
+    let result = transformed_components.join("\\");
+    // Prepend the drive letter with a colon and a single backslash.
+    Some(format!("{}:\\{}", drive_letter, result))
 }
 
 /// Checks if a folder is hidden.
@@ -218,6 +230,32 @@ fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
     folder_sizes
 }
 
+/// Scans the NTFS drive and returns a vector of FileInfo for non‑directory files
+/// that have a modification time (OffsetDateTime) satisfying the filter closure.
+fn scan_files_by_modified<F>(drive_letter: &str, filter: F) -> Vec<FileInfo>
+where F: Fn(OffsetDateTime) -> bool,
+{
+    let drive_path = format!("\\\\.\\{}:", drive_letter);
+    let volume = Volume::new(&drive_path)
+        .expect(&format!("Failed to open volume at {}", drive_path));
+    let mft = Mft::new(volume)
+        .expect("Failed to create MFT from the volume");
+
+    let mut files: Vec<FileInfo> = Vec::new();
+    mft.iterate_files(|file| {
+        let info = FileInfo::new(&mft, file);
+        if !info.is_directory {
+            if let Some(modified) = info.modified {
+                if filter(modified) {
+                    files.push(info);
+                }
+            }
+        }
+    });
+    files.sort_by(|a, b| b.size.cmp(&a.size));
+    files
+}
+
 
 // -- printing functions -- //
 
@@ -244,19 +282,19 @@ pub fn print_file_type_dist(drive_letter: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn print_largest_files(drive_letter: &str) {
+pub fn print_largest_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
     let files = scan_largest_files(drive_letter);
 
     println!("Largest Files on Drive {} (Top 10):", drive_letter);
-    for file in files.into_iter().take(10) {
+    for file in files.into_iter().take(20) {
         // Filter the file name if it's a GUID concatenation.
-        let display_name = filter_filename(&file.name);
+        let display_name = filter_filename(&file.name, true);
         println!("{:<30} {}", display_name, format_size(file.size));
     }
+    Ok(())
 }
 
-/// Prints the top 10 largest folders by total file size.
-pub fn print_largest_folders(drive_letter: &str) {
+pub fn print_largest_folders(drive_letter: &str) -> Result<(), Box<dyn Error>> {
     let folder_sizes = scan_largest_folders(drive_letter);
 
     // Convert to vector and sort descending by size.
@@ -264,11 +302,44 @@ pub fn print_largest_folders(drive_letter: &str) {
     folders.sort_by(|a, b| b.1.cmp(a.1));
 
     println!("Largest Folders on Drive {} (Top 10):", drive_letter);
-    for (folder, size) in folders.into_iter().take(10) {
+    for (folder, size) in folders.into_iter().take(20) {
         println!("{:<50} {}", folder, format_size(*size));
     }
+    Ok(())
 }
 
+/// Prints the top 10 largest files modified within the last 30 days.
+pub fn print_recent_large_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+    let now = OffsetDateTime::now_utc();
+    let threshold = Duration::days(30);
+
+    let files = scan_files_by_modified(drive_letter, |mod_time| {
+        now - mod_time <= threshold
+    });
+
+    println!("Recent Large Files on Drive {} (Modified within last 30 days):", drive_letter);
+    for file in files.into_iter().take(10) {
+        // You might want to improve the printed modified time formatting.
+        println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
+    }
+    Ok(())
+}
+
+/// Prints the top 10 largest files modified more than 6 months ago.
+pub fn print_old_large_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+    let now = OffsetDateTime::now_utc();
+    let threshold = Duration::days(6 * 30); // approximate 6 months
+
+    let files = scan_files_by_modified(drive_letter, |mod_time| {
+        now - mod_time >= threshold
+    });
+
+    println!("Old Large Files on Drive {} (Modified more than 6 months ago):", drive_letter);
+    for file in files.into_iter().take(10) {
+        println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
+    }
+    Ok(())
+}
 
 #[cfg(test)]
 mod test {
@@ -283,7 +354,20 @@ mod test {
     #[test]
     fn test_printer() {
         println!("\n\n");
-        print_largest_folders("C");
-
+        print_largest_folders("C").unwrap();
+    }
+    
+    #[test]
+    fn test_all() {
+        let drivel = "C";
+        println!("\n\n");
+        print_drive_space(drivel).unwrap();
+        println!("\n\n");
+        print_file_type_dist(drivel).unwrap();
+        println!("\n\n");
+        print_largest_files(drivel).unwrap();
+        println!("\n\n");
+        print_largest_folders(drivel).unwrap();
+        println!("\n\n");
     }
 }
