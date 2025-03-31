@@ -1,4 +1,3 @@
-#![allow(dead_code)] #![allow(unused_mut)]
 use std::{
     collections::HashMap,
     error::Error,
@@ -109,13 +108,14 @@ fn folder_key_from_path(full_path: &str, drive_letter: &str, depth: usize) -> Op
 
     // Join the components back together.
     let result = transformed_components.join("\\");
-    // Prepend the drive letter with a colon and a single backslash.
+    // Prepend the drive letter with a colon
     Some(format!("{}:\\{}", drive_letter, result))
 }
 
 /// Checks if a folder is hidden.
-/// You might need to customize this based on your project.
-/// For now, let's say if the folder name starts with a dot, it's hidden.
+///
+/// hidden being with dots or folders that have the hidden tag (totally)
+#[allow(dead_code)]
 fn is_hidden_folder(folder: &str) -> bool {
     // Extract the final component and check if it starts with '.'
     if let Some(name) = Path::new(folder).file_name().and_then(|s| s.to_str()) {
@@ -124,6 +124,7 @@ fn is_hidden_folder(folder: &str) -> bool {
         false
     }
 }
+
 
 // -- scanning functions -- //
 
@@ -192,6 +193,7 @@ fn scan_largest_files(drive_letter: &str) -> Vec<FileInfo> {
 
     let mut files: Vec<FileInfo> = Vec::new();
     mft.iterate_files(|file| {
+        #[allow(unused_mut)]
         let mut info = FileInfo::new(&mft, file);
         if !info.is_directory {
             // Convert from clusters to bytes if needed:
@@ -202,7 +204,7 @@ fn scan_largest_files(drive_letter: &str) -> Vec<FileInfo> {
     files
 }
 
-/// Scans the NTFS drive and returns a HashMap of folder paths (up to 3 levels deep)
+/// Scans the NTFS drive and returns a HashMap of folder paths (up to 5 levels deep)
 /// and their total file sizes, excluding hidden folders.
 fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
     let drive_path = format!("\\\\.\\{}:", drive_letter);
@@ -220,7 +222,6 @@ fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
             if let Some(path_str) = info.path.to_str() {
                 if let Some(folder) = folder_key_from_path(path_str, drive_letter, 5) {
                     // Skip hidden folders if needed, e.g., folders starting with a dot.
-                    // For now, we assume all folders are allowed.
                     *folder_sizes.entry(folder).or_insert(0) += info.size;
                 }
             }
@@ -418,7 +419,6 @@ pub fn print_recent_large_files(drive_letter: &str, count: usize) -> Result<(), 
 
     println!("Recent Large Files on Drive {} (Modified within last 30 days):", drive_letter);
     for file in files.into_iter().take(count) {
-        // You might want to improve the printed modified time formatting.
         println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
     }
     Ok(())
