@@ -259,6 +259,27 @@ where F: Fn(OffsetDateTime) -> bool,
 
 // -- printing functions -- //
 
+/// Displays information about a drive's storage space.
+///
+/// # Arguments
+///
+/// * `drive` - The drive letter to analyze (e.g., "C", "D")
+///
+/// # Returns
+///
+/// Returns `Ok(())` on success or an error if the drive information cannot be retrieved.
+///
+/// # Examples
+///
+/// ```
+/// // Display space information for drive C:
+/// print_drive_space("C").unwrap();
+/// // Output:
+/// // Drive C:
+/// // Total space: 500 GB
+/// // Used space : 350 GB
+/// // Free space : 150 GB
+/// ```
 pub fn print_drive_space(drive: &str) -> Result<(), Box<dyn Error>> {
     let (total, used, free) = get_drive_space(drive)?;
 
@@ -269,24 +290,62 @@ pub fn print_drive_space(drive: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn print_file_type_dist(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+/// Displays a distribution of file types on a drive, sorted by total size.
+///
+/// # Arguments
+///
+/// * `drive_letter` - The drive letter to analyze (e.g., "C", "D")
+/// * `count` - The number of file types to display in the results
+///
+/// # Examples
+///
+/// ```
+/// // Display top 5 file types by size on drive D:
+/// print_file_type_dist("D", 5).unwrap();
+/// // Output:
+/// // File Type Distribution for Drive D: (Top 5 by space usage):
+/// // .mp4            150 GB
+/// // .zip            120 GB
+/// // .pdf            85 GB
+/// // .docx           45 GB
+/// // No Extension    32 GB
+/// ```
+pub fn print_file_type_dist(drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
     let distribution = scan_file_type_dist(drive_letter);
     let mut items: Vec<(&String, &u64)> = distribution.iter().collect();
     items.sort_by(|a, b| b.1.cmp(a.1));
 
-    println!("File Type Distribution for Drive {} (Top 10 by space usage):", drive_letter);
-    for (ext, size) in items.into_iter().take(10) {
+    println!("File Type Distribution for Drive {} (Top {} by space usage):", drive_letter, count);
+    for (ext, size) in items.into_iter().take(count) {
         let display_ext = if ext.is_empty() { "No Extension" } else { ext };
         println!("{:<15}: {}", display_ext, format_size(*size));
     }
     Ok(())
 }
 
-pub fn print_largest_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+/// Displays the largest files on a drive, sorted by size.
+///
+/// # Arguments
+///
+/// * `drive_letter` - The drive letter to analyze (e.g., "C", "D")
+/// * `count` - The number of files to display in the results
+///
+/// # Examples
+///
+/// ```
+/// // Display top 3 largest files on drive E:
+/// print_largest_files("E", 3).unwrap();
+/// // Output:
+/// // Largest Files on Drive E (Top 3):
+/// // movie.mkv                       8.5 GB
+/// // backup.iso                      4.2 GB
+/// // dataset.csv                     1.8 GB
+/// ```
+pub fn print_largest_files(drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
     let files = scan_largest_files(drive_letter);
 
-    println!("Largest Files on Drive {} (Top 10):", drive_letter);
-    for file in files.into_iter().take(20) {
+    println!("Largest Files on Drive {} (Top {}):", drive_letter, count);
+    for file in files.into_iter().take(count) {
         // Filter the file name if it's a GUID concatenation.
         let display_name = filter_filename(&file.name, true);
         println!("{:<30} {}", display_name, format_size(file.size));
@@ -294,22 +353,62 @@ pub fn print_largest_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn print_largest_folders(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+/// Displays the largest folders on a drive, sorted by total size.
+///
+/// # Arguments
+///
+/// * `drive_letter` - The drive letter to analyze (e.g., "C", "D")
+/// * `count` - The number of folders to display in the results
+///
+/// # Examples
+///
+/// ```
+/// // Display top 5 largest folders on drive C:
+/// print_largest_folders("C", 5).unwrap();
+/// // Output:
+/// // Largest Folders on Drive C: (Top 5):
+/// // C:\Users\username\Videos                              350 GB
+/// // C:\Program Files                                      120 GB
+/// // C:\Users\username\Downloads                           85 GB
+/// // C:\Windows                                            65 GB
+/// // C:\Program Files (x86)                                45 GB
+/// ```
+pub fn print_largest_folders(drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
     let folder_sizes = scan_largest_folders(drive_letter);
 
     // Convert to vector and sort descending by size.
     let mut folders: Vec<(&String, &u64)> = folder_sizes.iter().collect();
     folders.sort_by(|a, b| b.1.cmp(a.1));
 
-    println!("Largest Folders on Drive {} (Top 10):", drive_letter);
-    for (folder, size) in folders.into_iter().take(20) {
+    println!("Largest Folders on Drive {} (Top {}):", drive_letter, count);
+    for (folder, size) in folders.into_iter().take(count) {
         println!("{:<50} {}", folder, format_size(*size));
     }
     Ok(())
 }
 
-/// Prints the top 10 largest files modified within the last 30 days.
-pub fn print_recent_large_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+/// Prints the largest files modified within the last 30 days.
+/// 
+/// it is gonna be a little too accurate, for now
+///
+/// # Arguments
+///
+/// * `drive_letter` - The drive letter to analyze (e.g., "C", "D")
+/// * `count` - The number of files to display in the results
+///
+/// # Examples
+///
+/// ```
+/// // Display top 4 recent large files on drive D:
+/// print_recent_large_files("D", 4).unwrap();
+/// // Output:
+/// // Recent Large Files on Drive D: (Modified within last 30 days):
+/// // project_backup.zip             2.5 GB  Modified: 2023-05-10T14:32:15Z
+/// // meeting_recording.mp4          1.8 GB  Modified: 2023-05-15T09:45:30Z
+/// // system_logs.tar                1.2 GB  Modified: 2023-05-18T22:10:05Z
+/// // virtual_machine.vhdx           0.9 GB  Modified: 2023-05-20T16:25:40Z
+/// ```
+pub fn print_recent_large_files(drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
     let now = OffsetDateTime::now_utc();
     let threshold = Duration::days(30);
 
@@ -318,15 +417,34 @@ pub fn print_recent_large_files(drive_letter: &str) -> Result<(), Box<dyn Error>
     });
 
     println!("Recent Large Files on Drive {} (Modified within last 30 days):", drive_letter);
-    for file in files.into_iter().take(10) {
+    for file in files.into_iter().take(count) {
         // You might want to improve the printed modified time formatting.
         println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
     }
     Ok(())
 }
 
-/// Prints the top 10 largest files modified more than 6 months ago.
-pub fn print_old_large_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
+/// Prints the largest files modified more than 6 months ago.
+/// 
+/// it is gonna be a little too accurate, for now
+///
+/// # Arguments
+///
+/// * `drive_letter` - The drive letter to analyze (e.g., "C", "D")
+/// * `count` - The number of files to display in the results
+///
+/// # Examples
+///
+/// ```
+/// // Display top 3 old large files on drive C:
+/// print_old_large_files("C", 3).unwrap();
+/// // Output:
+/// // Old Large Files on Drive C: (Modified more than 6 months ago):
+/// // old_backup_2022.zip            4.5 GB  Modified: 2022-08-12T18:20:45Z
+/// // archive_data.tar               3.2 GB  Modified: 2022-05-30T11:15:22Z
+/// // legacy_application.iso         2.8 GB  Modified: 2021-11-05T14:40:15Z
+/// ```
+pub fn print_old_large_files(drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
     let now = OffsetDateTime::now_utc();
     let threshold = Duration::days(6 * 30); // approximate 6 months
 
@@ -335,7 +453,7 @@ pub fn print_old_large_files(drive_letter: &str) -> Result<(), Box<dyn Error>> {
     });
 
     println!("Old Large Files on Drive {} (Modified more than 6 months ago):", drive_letter);
-    for file in files.into_iter().take(10) {
+    for file in files.into_iter().take(count) {
         println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
     }
     Ok(())
@@ -354,7 +472,7 @@ mod test {
     #[test]
     fn test_printer() {
         println!("\n\n");
-        print_largest_folders("C").unwrap();
+        print_largest_folders("C", 13).unwrap();
     }
     
     #[test]
@@ -363,11 +481,15 @@ mod test {
         println!("\n\n");
         print_drive_space(drivel).unwrap();
         println!("\n\n");
-        print_file_type_dist(drivel).unwrap();
+        print_file_type_dist(drivel, 12).unwrap();
         println!("\n\n");
-        print_largest_files(drivel).unwrap();
+        print_largest_files(drivel, 12).unwrap();
         println!("\n\n");
-        print_largest_folders(drivel).unwrap();
+        print_largest_folders(drivel, 12).unwrap();
+        println!("\n\n");
+        print_old_large_files(drivel, 12).unwrap();
+        println!("\n\n");
+        print_recent_large_files(drivel, 12).unwrap();
         println!("\n\n");
     }
 }
