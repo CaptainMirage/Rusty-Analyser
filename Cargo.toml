@@ -1,6 +1,6 @@
 [package]
 name = "Rusty-Analyser"
-version = "0.2.9-beta"
+version = "0.3.0-beta"
 edition = "2024"
 
 [dependencies]
@@ -19,6 +19,7 @@ windows = { version = "0.61.1", features = [
     "Win32_Storage_FileSystem",
 ]}
 ntfs-reader = "0.4.2"
+time = "0.3.41"
 
 [features]
 # DEBUG_MODE should be off by default
