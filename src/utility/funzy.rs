@@ -121,8 +121,11 @@ pub fn type_text(
 
 // simplified version of type_text with default parameters
 #[allow(dead_code)]
-pub fn type_text_simple(text: &str, speed_ms: u64) {
-    type_text(text, speed_ms, Some(500), true, Some("bright_white"));
+pub fn type_text_s(text: &str, speed_ms: u64) {
+    type_text(text, speed_ms, Some(400), true, Some("bright_white"));
+}
+pub fn type_text_ss(text: &str) {
+    type_text(text, 35, Some(400), true, Some("bright_white"));
 }
 
 // this is unsafe C code, only use it if you know what you're doing
