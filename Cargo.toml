@@ -35,6 +35,6 @@ panic = "abort"
 [profile.release]
 opt-level = 3
 debug = false
-overflow-checks = false
-panic = "unwind"
+overflow-checks = true
+panic = "abort"
 lto = "thin"
