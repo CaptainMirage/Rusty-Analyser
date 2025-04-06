@@ -1,19 +1,15 @@
 #![allow(dead_code)]
+use crate::utility::constants::GB_TO_BYTES;
+use ntfs_reader::{file_info::FileInfo, mft::Mft, volume::Volume};
 use std::{
     collections::HashMap,
     error::Error,
     ffi::OsStr,
     fmt::format,
-    os::windows::ffi::OsStrExt,
-    ptr::null_mut,
     io::{Read, Seek},
-    path::Path
-};
-use crate::utility::constants::GB_TO_BYTES;
-use ntfs_reader::{
-    file_info::FileInfo,
-    mft::Mft,
-    volume::Volume
+    os::windows::ffi::OsStrExt,
+    path::Path,
+    ptr::null_mut,
 };
 use time::{Duration, OffsetDateTime};
 
@@ -35,7 +31,7 @@ fn is_guid_concat(name: &str) -> bool {
 }
 
 /// given a file name, returns a user-friendly name (filtering out GUID concatenations).
-pub fn filter_filename(name: &str, empty: bool) -> String  {
+pub fn filter_filename(name: &str, empty: bool) -> String {
     if name.is_empty() && empty {
         "No Name".to_string()
     } else if is_guid_concat(name) {
@@ -46,7 +42,7 @@ pub fn filter_filename(name: &str, empty: bool) -> String  {
 }
 
 /// given a number in bytes, returns a compressed version of it
-/// 
+///
 /// examples : `1505210368 --> 1.40 GB` | `815663130 --> 777.88 MB`
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
@@ -66,7 +62,7 @@ fn format_size(bytes: u64) -> String {
 
 /// Returns a folder key (as a String) from a full file path.
 /// It takes up to 5 directory components from the root.
-/// Example: 
+/// Example:
 ///
 /// "C:\Folder1\Folder2\Folder3\Folder4\Folder5\Folder6\file.txt" becomes
 /// "C:\Folder1\Folder2\Folder3\Folder4\Folder5".
@@ -136,10 +132,7 @@ fn get_drive_space(drive: &str) -> Result<(u64, u64, u64), Box<dyn Error>> {
     // Construct a device path like "C:\".
     let path = format!("{}:\\", drive);
     // Convert to a null-terminated wide string.
-    let wide: Vec<u16> = OsStr::new(&path)
-        .encode_wide()
-        .chain(Some(0))
-        .collect();
+    let wide: Vec<u16> = OsStr::new(&path).encode_wide().chain(Some(0)).collect();
 
     let mut free_available = 0u64;
     let mut total_bytes = 0u64;
@@ -165,7 +158,8 @@ fn get_drive_space(drive: &str) -> Result<(u64, u64, u64), Box<dyn Error>> {
 /// scans the NTFS drive and returns a HashMap with file extensions and their total sizes.
 fn scan_file_type_dist(drive_letter: &str) -> HashMap<String, u64> {
     let drive_path = format!("\\\\.\\{}:", drive_letter);
-    let volume = Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
+    let volume =
+        Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
     let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
 
     let mut distribution: HashMap<String, u64> = HashMap::new();
@@ -187,10 +181,9 @@ fn scan_file_type_dist(drive_letter: &str) -> HashMap<String, u64> {
 
 fn scan_largest_files(drive_letter: &str) -> Vec<FileInfo> {
     let drive_path = format!("\\\\.\\{}:", drive_letter);
-    let volume = Volume::new(&drive_path)
-        .expect(&format!("Failed to open volume at {}", drive_path));
-    let mft = Mft::new(volume)
-        .expect("Failed to create MFT from the volume");
+    let volume =
+        Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
+    let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
 
     let mut files: Vec<FileInfo> = Vec::new();
     mft.iterate_files(|file| {
@@ -209,10 +202,9 @@ fn scan_largest_files(drive_letter: &str) -> Vec<FileInfo> {
 /// and their total file sizes, excluding hidden folders.
 fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
     let drive_path = format!("\\\\.\\{}:", drive_letter);
-    let volume = Volume::new(&drive_path)
-        .expect(&format!("Failed to open volume at {}", drive_path));
-    let mft = Mft::new(volume)
-        .expect("Failed to create MFT from the volume");
+    let volume =
+        Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
+    let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
 
     let mut folder_sizes: HashMap<String, u64> = HashMap::new();
 
@@ -235,13 +227,13 @@ fn scan_largest_folders(drive_letter: &str) -> HashMap<String, u64> {
 /// Scans the NTFS drive and returns a vector of FileInfo for non‑directory files
 /// that have a modification time (OffsetDateTime) satisfying the filter closure.
 fn scan_files_by_modified<F>(drive_letter: &str, filter: F) -> Vec<FileInfo>
-where F: Fn(OffsetDateTime) -> bool,
+where
+    F: Fn(OffsetDateTime) -> bool,
 {
     let drive_path = format!("\\\\.\\{}:", drive_letter);
-    let volume = Volume::new(&drive_path)
-        .expect(&format!("Failed to open volume at {}", drive_path));
-    let mft = Mft::new(volume)
-        .expect("Failed to create MFT from the volume");
+    let volume =
+        Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
+    let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
 
     let mut files: Vec<FileInfo> = Vec::new();
     mft.iterate_files(|file| {
@@ -317,7 +309,10 @@ pub fn print_file_type_dist(drive_letter: &str, count: usize) -> Result<(), Box<
     let mut items: Vec<(&String, &u64)> = distribution.iter().collect();
     items.sort_by(|a, b| b.1.cmp(a.1));
 
-    println!("File Type Distribution for Drive {} (Top {} by space usage):", drive_letter, count);
+    println!(
+        "File Type Distribution for Drive {} (Top {} by space usage):",
+        drive_letter, count
+    );
     for (ext, size) in items.into_iter().take(count) {
         let display_ext = if ext.is_empty() { "No Extension" } else { ext };
         println!("{:<15}: {}", display_ext, format_size(*size));
@@ -390,7 +385,7 @@ pub fn print_largest_folders(drive_letter: &str, count: usize) -> Result<(), Box
 }
 
 /// Prints the largest files modified within the last 30 days.
-/// 
+///
 /// it is gonna be a little too accurate, for now
 ///
 /// # Arguments
@@ -414,19 +409,25 @@ pub fn print_recent_large_files(drive_letter: &str, count: usize) -> Result<(), 
     let now = OffsetDateTime::now_utc();
     let threshold = Duration::days(30);
 
-    let files = scan_files_by_modified(drive_letter, |mod_time| {
-        now - mod_time <= threshold
-    });
+    let files = scan_files_by_modified(drive_letter, |mod_time| now - mod_time <= threshold);
 
-    println!("Recent Large Files on Drive {} (Modified within last 30 days):", drive_letter);
+    println!(
+        "Recent Large Files on Drive {} (Modified within last 30 days):",
+        drive_letter
+    );
     for file in files.into_iter().take(count) {
-        println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
+        println!(
+            "{:<30} {}  Modified: {}",
+            filter_filename(&*file.name, true),
+            format_size(file.size),
+            file.modified.unwrap()
+        );
     }
     Ok(())
 }
 
 /// Prints the largest files modified more than 6 months ago.
-/// 
+///
 /// it is gonna be a little too accurate, for now
 ///
 /// # Arguments
@@ -449,13 +450,19 @@ pub fn print_old_large_files(drive_letter: &str, count: usize) -> Result<(), Box
     let now = OffsetDateTime::now_utc();
     let threshold = Duration::days(6 * 30); // approximate 6 months
 
-    let files = scan_files_by_modified(drive_letter, |mod_time| {
-        now - mod_time >= threshold
-    });
+    let files = scan_files_by_modified(drive_letter, |mod_time| now - mod_time >= threshold);
 
-    println!("Old Large Files on Drive {} (Modified more than 6 months ago):", drive_letter);
+    println!(
+        "Old Large Files on Drive {} (Modified more than 6 months ago):",
+        drive_letter
+    );
     for file in files.into_iter().take(count) {
-        println!("{:<30} {}  Modified: {}", filter_filename(&*file.name, true), format_size(file.size), file.modified.unwrap());
+        println!(
+            "{:<30} {}  Modified: {}",
+            filter_filename(&*file.name, true),
+            format_size(file.size),
+            file.modified.unwrap()
+        );
     }
     Ok(())
 }
@@ -475,7 +482,7 @@ mod test {
         println!("\n\n");
         print_largest_folders("C", 13).unwrap();
     }
-    
+
     #[test]
     fn test_all() {
         let drivel = "C";
