@@ -1,6 +1,7 @@
 use super::help_cmd::*;
+use crate::analyser;
 use crate::analyser::StorageAnalyser;
-use crate::utility::utils::{save_empty_folders_to_file, validate_and_format_drive, time_command};
+use crate::utility::utils::{save_empty_folders_to_file, time_command, validate_and_format_drive};
 use colored::Colorize;
 use std::{
     env,
@@ -8,7 +9,6 @@ use std::{
     process,
 };
 use whoami::fallible;
-use crate::analyser;
 
 macro_rules! vfd {
     // pattern to accept an arbitrary closure block
@@ -128,7 +128,7 @@ pub fn bash_commands() {
             },
 
             ["file-type-dist", ..] => match command.get(1) {
-                Some(drive) => time_command(|| { vfd!(drive, analyser, print_file_type_distribution)}),
+                Some(drive) => time_command(|| vfd!(drive, analyser, print_file_type_distribution)),
                 None => println!(
                     "drive letter required. Usage: {} [drive]",
                     command.get(0).unwrap()
@@ -198,7 +198,7 @@ pub fn bash_commands() {
                 }
             }
 
-        ["rescan", ..] => match command.get(1) {
+            ["rescan", ..] => match command.get(1) {
                 Some(drive) => vfd!(drive, |d| {
                     time_command(|| {
                         analyser.rescan_drive(d)?;
@@ -208,11 +208,11 @@ pub fn bash_commands() {
                 }),
                 None => println!("Drive letter required. Usage: rescan [drive]"),
             },
-            
+
             _ => {
                 println!("{}: command not found", command[0]);
             }
-        }   
+        }
         input.clear();
         prompter_fn();
     }
