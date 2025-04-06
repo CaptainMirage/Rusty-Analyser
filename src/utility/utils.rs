@@ -38,7 +38,6 @@ where
     result
 }
 
-
 pub fn calculate_folder_size(path: &Path) -> io::Result<FolderSize> {
     let files: Vec<_> = WalkDir::new(path)
         .into_iter()

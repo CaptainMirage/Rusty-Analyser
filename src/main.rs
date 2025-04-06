@@ -1,15 +1,9 @@
 mod analyser;
 mod shell;
 mod utility;
-use crate::{
-    utility::{
-        funzy::display_boot_sequence,
-        constants::*
-    },
+use crate::utility::{constants::*, funzy::display_boot_sequence};
 
-};
-
-fn main() -> Result<(), Box<dyn std::error::Error>>  {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(debug_assertions)]
     {
         println!("--- WARNING ---");
@@ -24,6 +18,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>>  {
 
         shell::bash_commands();
     }
-    
+
     Ok(())
 }

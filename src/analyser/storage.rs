@@ -355,7 +355,7 @@ impl StorageAnalyser {
     }
 
     /// returns largest folders up to 3 levels deep
-    /// 
+    ///
     /// excludes hidden folders (those starting with '.')
     pub fn print_largest_folders(&mut self, drive: &str) -> io::Result<()> {
         println!("\n--- Largest Folders (Top 10) ---");
