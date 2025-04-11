@@ -65,9 +65,9 @@ lazy_static! {
         }
         add_command!{
             m, "Error-680089",
-            title      : "????????",
-            cmd_args   : "Error-680089",
-            description: "",
+            title      : "hmmm",
+            cmd_args   : "Error-800869",
+            description: "ignore this, the dev has no idea what he is doing",
         }
         add_command!{
             m, "largest-files",
