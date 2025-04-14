@@ -21,10 +21,6 @@ windows = { version = "0.61.1", features = [
 ntfs-reader = "0.4.2"
 time = "0.3.41"
 
-[features]
-# DEBUG_MODE should be off by default
-DEBUG_MODE = []
-
 [profile.dev]
 opt-level = 0
 overflow-checks = true
