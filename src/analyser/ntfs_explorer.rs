@@ -13,6 +13,7 @@ use std::{
 };
 use time::{Duration, OffsetDateTime};
 
+// unsafe shit, use properly or get a panic attack
 #[link(name = "kernel32")]
 unsafe extern "system" {
     fn GetDiskFreeSpaceExW(
