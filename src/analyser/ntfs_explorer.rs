@@ -483,18 +483,21 @@ mod test {
 
     #[test]
     fn test_scanner() {
-        let files = scan_largest_folders("C");
+        let explorer = NtfsExplorer::new();
+        let files = explorer.scan_largest_folders("C");
         assert!(!files.is_empty(), "Expected some files from drive C");
     }
 
     #[test]
     fn test_printer() {
+        let explorer = NtfsExplorer::new();
         println!("\n\n");
         print_largest_folders("C", 13).unwrap();
     }
 
     #[test]
     fn test_all() {
+        let explorer = NtfsExplorer::new();
         let drivel = "C";
         println!("\n\n");
         print_drive_space(drivel).unwrap();
