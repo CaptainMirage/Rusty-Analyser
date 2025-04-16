@@ -492,7 +492,7 @@ mod test {
     fn test_printer() {
         let explorer = NtfsExplorer::new();
         println!("\n\n");
-        print_largest_folders("C", 13).unwrap();
+        explorer.print_largest_folders("C", 13).unwrap();
     }
 
     #[test]
@@ -500,17 +500,17 @@ mod test {
         let explorer = NtfsExplorer::new();
         let drivel = "C";
         println!("\n\n");
-        print_drive_space(drivel).unwrap();
+        explorer.print_drive_space(drivel).unwrap();
         println!("\n\n");
-        print_file_type_dist(drivel, 12).unwrap();
+        explorer.print_file_type_dist(drivel, 12).unwrap();
         println!("\n\n");
-        print_largest_files(drivel, 12).unwrap();
+        explorer.print_largest_files(drivel, 12).unwrap();
         println!("\n\n");
-        print_largest_folders(drivel, 12).unwrap();
+        explorer.print_largest_folders(drivel, 12).unwrap();
         println!("\n\n");
-        print_old_large_files(drivel, 12).unwrap();
+        explorer.print_old_large_files(drivel, 12).unwrap();
         println!("\n\n");
-        print_recent_large_files(drivel, 12).unwrap();
+        explorer.print_recent_large_files(drivel, 12).unwrap();
         println!("\n\n");
     }
 }
