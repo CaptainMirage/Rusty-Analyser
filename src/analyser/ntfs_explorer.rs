@@ -656,7 +656,7 @@ mod ntfs_tests {
     use super::*;
 
     #[test]
-    fn test_empty_folders() {
+    fn test_scanner() {
         let explorer = NtfsExplorer::new();
         let empty_folders = explorer.scan_empty_folders("C");
         println!("Found {} empty folders on drive C", empty_folders.len());
@@ -666,7 +666,7 @@ mod ntfs_tests {
     }
 
     #[test]
-    fn test_print_empty_folders() {
+    fn test_printer() {
         let explorer = NtfsExplorer::new();
         println!("\n\n");
         // Display the top 10 empty folders
