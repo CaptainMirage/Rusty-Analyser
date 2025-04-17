@@ -24,8 +24,7 @@ unsafe extern "system" {
     ) -> i32;
 }
 
-pub struct NtfsExplorer {
-}
+pub struct NtfsExplorer {}
 
 impl NtfsExplorer {
     pub fn new() -> Self {
