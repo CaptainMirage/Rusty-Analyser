@@ -129,6 +129,59 @@ impl NtfsExplorer {
             false
         }
     }
+
+    /// Formats a folder path to a consistent format with drive letter.
+    /// Additionally, performs proper filtering and sanity checks.
+    fn format_folder_path(&self, path_str: &str, drive_letter: &str) -> String {
+        // Convert raw device path to standard Windows path format
+        let device_prefix = format!("\\\\.\\{}:", drive_letter);
+        let without_prefix = if path_str.starts_with(&device_prefix) {
+            path_str.replacen(&device_prefix, "", 1)
+        } else {
+            path_str.to_string()
+        };
+
+        // Ensure the path starts with drive letter
+        let formatted_path = if without_prefix.is_empty() {
+            format!("{}:\\", drive_letter)
+        } else if without_prefix.starts_with('\\') {
+            format!("{}:{}", drive_letter, without_prefix)
+        } else {
+            format!("{}:\\{}", drive_letter, without_prefix)
+        };
+
+        // Clean up path and filter invalid or system folders
+        self.cleanup_path(&formatted_path)
+    }
+
+    /// Clean up path and filter out system/special folders that might cause issues
+    fn cleanup_path(&self, path: &str) -> String {
+        // Convert backslashes to forward slashes for consistent handling
+        let mut cleaned = path.replace('\\', "/");
+
+        // Remove duplicate slashes
+        while cleaned.contains("//") {
+            cleaned = cleaned.replace("//", "/");
+        }
+
+        // Convert back to Windows format
+        cleaned.replace('/', "\\")
+    }
+
+    /// Determines if a folder is a system folder that should be excluded
+    fn is_system_folder(&self, path: &str) -> bool {
+        // Check for typical system folders that should be excluded
+        let lower_path = path.to_lowercase();
+
+        lower_path.contains("\\system volume information") ||
+            lower_path.contains("\\$recycle.bin") ||
+            lower_path.contains("\\$extend") ||
+            lower_path.contains("\\windows\\") ||
+            lower_path.ends_with("\\windows") ||
+            path.contains("\\$") ||  // Most system folders contain $ symbol
+            path.contains('?') ||    // Invalid paths may contain ? chars
+            path.contains('*')       // Invalid paths may contain * chars
+    }
     
     
     // -- scanning functions -- //
@@ -230,6 +283,54 @@ impl NtfsExplorer {
         });
     
         folder_sizes
+    }
+
+    /// Scans the NTFS drive and returns a vector of empty folder paths.
+    /// A folder is considered empty if it contains no files and no subfolders.
+    fn scan_empty_folders(&self, drive_letter: &str) -> Vec<String> {
+        let drive_path = format!("\\\\.\\{}:", drive_letter);
+        let volume =
+            Volume::new(&drive_path).expect(&format!("Failed to open volume at {}", drive_path));
+        let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
+
+        // Use a more efficient data structure: HashMap where key is folder path,
+        // and value is a boolean indicating if it's empty (true) or not (false)
+        let mut folder_status: HashMap<String, bool> = HashMap::new();
+
+        // First pass: collect all directories with their initial "empty" status
+        mft.iterate_files(|file| {
+            let info = FileInfo::new(&mft, file);
+
+            if let Some(path_str) = info.path.to_str() {
+                if info.is_directory {
+                    // Insert this directory as potentially empty (true) if not already present
+                    let folder_path = self.format_folder_path(path_str, drive_letter);
+                    folder_status.entry(folder_path).or_insert(true);
+
+                    // Mark parent as non-empty since it contains this directory
+                    if let Some(parent) = Path::new(path_str).parent() {
+                        if let Some(parent_str) = parent.to_str() {
+                            let parent_path = self.format_folder_path(parent_str, drive_letter);
+                            folder_status.insert(parent_path, false);
+                        }
+                    }
+                } else {
+                    // For files: mark their parent directory as non-empty
+                    if let Some(parent) = Path::new(path_str).parent() {
+                        if let Some(parent_str) = parent.to_str() {
+                            let parent_path = self.format_folder_path(parent_str, drive_letter);
+                            folder_status.insert(parent_path, false);
+                        }
+                    }
+                }
+            }
+        });
+
+        // Filter folders that are still marked as empty
+        folder_status.into_iter()
+            .filter(|(_, is_empty)| *is_empty)
+            .map(|(path, _)| path)
+            .collect()
     }
     
     /// Scans the NTFS drive and returns a vector of FileInfo for non‑directory files
@@ -472,6 +573,80 @@ impl NtfsExplorer {
                 file.modified.unwrap()
             );
         }
+        Ok(())
+    }
+    
+    /// Displays empty folders on a drive.
+    ///
+    /// # Arguments
+    ///
+    /// * `drive_letter` - The drive letter to analyze (e.g., "C", "D")
+    /// * `count` - The number of empty folders to display in the results
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Display top 10 empty folders on drive C:
+    /// print_empty_folders("C", 10).unwrap();
+    /// // Output:
+    /// // Empty Folders on Drive C: (Top 10):
+    /// // C:\Users\username\Documents\Projects\Archived
+    /// // C:\Program Files\Temp
+    /// // C:\Users\username\Downloads\Extracted
+    /// // C:\Windows\Logs\Old
+    /// // C:\Backups\System\2023
+    /// ```
+    pub fn print_empty_folders(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
+        println!("Scanning for empty folders on Drive {}...", drive_letter);
+        let empty_folders = self.scan_empty_folders(drive_letter);
+
+        // Filter out system folders which are often reported as empty due to permissions
+        let filtered_folders: Vec<String> = empty_folders.into_iter()
+            .filter(|path| !self.is_system_folder(path))
+            .collect();
+
+        println!("Empty Folders on Drive {} (Top {}):", drive_letter, count);
+        println!("Found {} candidate empty folders after filtering", filtered_folders.len());
+
+        // Verify each folder is truly empty using filesystem operations
+        let mut verified_empty_folders = Vec::new();
+
+        for folder in &filtered_folders {
+            // Skip any path that doesn't actually exist (might be due to access rights issues)
+            let path = Path::new(folder);
+            if !path.exists() {
+                continue;
+            }
+
+            // Try to read directory entries
+            match std::fs::read_dir(path) {
+                Ok(entries) => {
+                    let is_empty = entries.count() == 0;
+                    if is_empty {
+                        verified_empty_folders.push(folder.clone());
+                    }
+                },
+                Err(_) => {
+                    // Skip folders we can't read (likely permission issues)
+                    continue;
+                }
+            }
+
+            // Don't process more than needed for the display
+            if verified_empty_folders.len() >= count {
+                break;
+            }
+        }
+
+        println!("Found {} verified empty folders", verified_empty_folders.len());
+
+        // Sort alphabetically for consistent output
+        verified_empty_folders.sort();
+
+        for folder in verified_empty_folders.into_iter().take(count) {
+            println!("{}", folder);
+        }
+
         Ok(())
     }
 }
