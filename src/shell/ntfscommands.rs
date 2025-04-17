@@ -1,5 +1,5 @@
 use super::help_cmd::*;
-use crate::analyser::ntfs_explorer;
+use crate::analyser::ntfs_explorer::NtfsExplorer;
 use crate::utility::utils::{save_empty_folders_to_file, time_command, validate_and_format_drive};
 use colored::Colorize;
 use std::{
@@ -66,6 +66,7 @@ pub fn bash_commands() {
     // wait for user input
     let stdin = io::stdin();
     let mut input = String::new();
+    let mut explorer = NtfsExplorer::new();
     loop {
         stdin.read_line(&mut input).unwrap();
         let command: Vec<String> = input
@@ -107,45 +108,45 @@ pub fn bash_commands() {
 
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => explorer.print_drive_space(drive).unwrap(),
                 None => println!(
                     "drive letter required. Usage: drive-space [drive]"),
             },
 
             ["file-type-dist", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => explorer.print_file_type_dist(drive, 20).unwrap(),
                 None => println!(
                     "drive letter required. Usage: file-type-dist [drive]"),
             },
 
             ["largest-files", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => explorer.print_largest_files(drive, 20).unwrap(),
                 None => println!(
                     "drive letter required. Usage: largest-files [drive]"),
             },
 
             ["largest-folder", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => explorer.print_largest_folders(drive, 20).unwrap(),
                 None => println!(
                     "drive letter required. Usage: largest-folder [drive]"),
             },
 
             ["recent-large-files", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => explorer.print_recent_large_files(drive, 20).unwrap(),
                 None => println!(
                     "drive letter required. Usage: recent-large-files [drive]"
                 ),
             },
 
             ["old-large-files", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => explorer.print_old_large_files(drive, 20).unwrap(),
                 None => println!(
                     "drive letter required. Usage: old-large-files [drive]"
                 ),
             },
 
             ["full-drive-analysis", ..] => match command.get(1) {
-                Some(drive) => continue,
+                Some(drive) => println!("LMAOOOOOOOOOOOOOOO"),
                 None => println!(
                     "drive letter required. Usage: full-drive-analysis [drive]"),
             },
@@ -156,17 +157,12 @@ pub fn bash_commands() {
                     println!("Deletion functionality for empty folders is not yet implemented.");
                 } else {
                     match command.get(1) {
-                        Some(drive) => continue,
+                        Some(drive) => explorer.print_empty_folders(drive, 20).unwrap(),
                         None => println!(
                             "drive letter required. Usage: empty-folders [drive]"),
                     }
                 }
             }
-
-            ["rescan", ..] => match command.get(1) {
-                Some(drive) => continue,
-                None => println!("Drive letter required. Usage: rescan [drive]"),
-            },
 
             _ => {
                 println!("{}: command not found", command[0]);
