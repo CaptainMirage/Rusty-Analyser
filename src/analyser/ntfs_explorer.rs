@@ -660,7 +660,7 @@ mod ntfs_tests {
         let explorer = NtfsExplorer::new();
         let empty_folders = explorer.scan_empty_folders("C");
         println!("Found {} empty folders on drive C", empty_folders.len());
-
+    
         // Just test that the function runs without errors
         assert!(empty_folders.len() >= 0);
     }
