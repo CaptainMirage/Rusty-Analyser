@@ -5,3 +5,4 @@ pub mod types;
 mod testshelf;
 
 pub use storage::StorageAnalyser;
+pub use ntfs_explorer::NtfsExplorer;
