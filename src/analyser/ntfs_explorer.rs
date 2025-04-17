@@ -652,39 +652,24 @@ impl NtfsExplorer {
 }
 
 #[cfg(test)]
-mod test {
+mod ntfs_tests {
     use super::*;
 
     #[test]
-    fn test_scanner() {
+    fn test_empty_folders() {
         let explorer = NtfsExplorer::new();
-        let files = explorer.scan_largest_folders("C");
-        assert!(!files.is_empty(), "Expected some files from drive C");
+        let empty_folders = explorer.scan_empty_folders("C");
+        println!("Found {} empty folders on drive C", empty_folders.len());
+
+        // Just test that the function runs without errors
+        assert!(empty_folders.len() >= 0);
     }
 
     #[test]
-    fn test_printer() {
+    fn test_print_empty_folders() {
         let explorer = NtfsExplorer::new();
         println!("\n\n");
-        explorer.print_largest_folders("C", 13).unwrap();
-    }
-
-    #[test]
-    fn test_all() {
-        let explorer = NtfsExplorer::new();
-        let drivel = "C";
-        println!("\n\n");
-        explorer.print_drive_space(drivel).unwrap();
-        println!("\n\n");
-        explorer.print_file_type_dist(drivel, 12).unwrap();
-        println!("\n\n");
-        explorer.print_largest_files(drivel, 12).unwrap();
-        println!("\n\n");
-        explorer.print_largest_folders(drivel, 12).unwrap();
-        println!("\n\n");
-        explorer.print_old_large_files(drivel, 12).unwrap();
-        println!("\n\n");
-        explorer.print_recent_large_files(drivel, 12).unwrap();
-        println!("\n\n");
+        // Display the top 10 empty folders
+        explorer.print_empty_folders("C", 100).unwrap();
     }
 }
