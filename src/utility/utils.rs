@@ -14,6 +14,7 @@ use std::{
     fs::{OpenOptions, create_dir_all},
     time::{SystemTime, UNIX_EPOCH},
 };
+use std::error::Error;
 use walkdir::WalkDir;
 
 // helper function to convert system time to formatted string
@@ -188,5 +189,48 @@ where
             "Invalid drive format. Please enter a single letter (e.g., 'C')\
          or a valid drive path (e.g., 'C:/')."
         );
+    }
+}
+
+
+/// A thin wrapper around `validate_and_format_drive` that:
+/// 1. lets you write actions returning `Result<(), Box<dyn Error>>`  
+/// 2. still runs through all of the drive‑format/validation logic  
+/// 3. prints the same `eprintln!`s on bad format or I/O
+pub fn validate_drive<F>(
+    drive: &str,
+    action: F,
+) -> Result<(), Box<dyn Error>>
+where
+// now accepts your explorer‑style closures that return Box<dyn Error>
+    F: FnOnce(&str) -> Result<(), Box<dyn Error>>,
+{
+    // stash whatever your action returns
+    let mut result: Option<Result<(), Box<dyn Error>>> = None;
+
+    // run the core validator/formatter
+    validate_and_format_drive(drive, |formatted_drive| {
+        match action(formatted_drive) {
+            Ok(()) => {
+                // action succeeded
+                result = Some(Ok(()));
+                Ok(()) // tell the validator "no I/O error"
+            }
+            Err(e) => {
+                // action failed — stash the real Box<dyn Error>
+                result = Some(Err(e));
+                // but return an io::Error so `validate_and_format_drive` will
+                // hit its `if let Err(e) = action(...) { eprintln!(...) }` branch
+                Err(io::Error::new(io::ErrorKind::Other, "action failed"))
+            }
+        }
+    });
+    
+    // todo - make the None thing actually do smth and not a lazy shit
+    // now look at what actually happened
+    match result {
+        Some(Ok(()))  => Ok(()),      // drive OK + action OK
+        Some(Err(e))  => Err(e),      // drive OK + action Err(e)
+        None          => Ok(()),  // validator never even called us
     }
 }
