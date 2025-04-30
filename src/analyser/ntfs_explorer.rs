@@ -1,5 +1,8 @@
 #![allow(dead_code)]
-use crate::utility::constants::GB_TO_BYTES;
+use crate::utility::{
+    constants::GB_TO_BYTES,
+    utils::validate_drive
+};
 use ntfs_reader::{file_info::FileInfo, mft::Mft, volume::Volume};
 use std::{
     collections::HashMap,
@@ -12,6 +15,7 @@ use std::{
     ptr::null_mut,
 };
 use time::{Duration, OffsetDateTime};
+
 
 // unsafe shit, use properly or get a panic attack
 #[link(name = "kernel32")]
@@ -383,14 +387,16 @@ impl NtfsExplorer {
     /// // Used space : 350 GB
     /// // Free space : 150 GB
     /// ```
-    pub fn print_drive_space(&self, drive: &str) -> Result<(), Box<dyn Error>> {
-        let (total, used, free) = self.get_drive_space(drive)?;
-    
-        println!("Drive {}:", drive);
-        println!("Total space: {} GB", self.format_size(total));
-        println!("Used space : {} GB", self.format_size(used));
-        println!("Free space : {} GB", self.format_size(free));
-        Ok(())
+    pub fn print_drive_space(&self, drive_letter: &str) -> Result<(), Box<dyn Error>> {
+        validate_drive(drive_letter, |formatted_drive| {
+            let (total, used, free) = self.get_drive_space(formatted_drive)?;
+
+            println!("Drive {}:", formatted_drive);
+            println!("Total space: {} GB", self.format_size(total));
+            println!("Used space : {} GB", self.format_size(used));
+            println!("Free space : {} GB", self.format_size(free));
+            Ok(())
+        })
     }
     
     /// Displays a distribution of file types on a drive, sorted by total size.
@@ -414,19 +420,21 @@ impl NtfsExplorer {
     /// // No Extension    32 GB
     /// ```
     pub fn print_file_type_dist(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
-        let distribution = self.scan_file_type_dist(drive_letter);
-        let mut items: Vec<(&String, &u64)> = distribution.iter().collect();
-        items.sort_by(|a, b| b.1.cmp(a.1));
-    
-        println!(
-            "File Type Distribution for Drive {} (Top {} by space usage):",
-            drive_letter, count
-        );
-        for (ext, size) in items.into_iter().take(count) {
-            let display_ext = if ext.is_empty() { "No Extension" } else { ext };
-            println!("{:<15}: {}", display_ext, self.format_size(*size));
-        }
-        Ok(())
+        validate_drive(drive_letter, |formatted_drive| {
+            let distribution = self.scan_file_type_dist(formatted_drive);
+            let mut items: Vec<(&String, &u64)> = distribution.iter().collect();
+            items.sort_by(|a, b| b.1.cmp(a.1));
+
+            println!(
+                "File Type Distribution for Drive {} (Top {} by space usage):",
+                formatted_drive, count
+            );
+            for (ext, size) in items.into_iter().take(count) {
+                let display_ext = if ext.is_empty() { "No Extension" } else { ext };
+                println!("{:<15}: {}", display_ext, self.format_size(*size));
+            }
+            Ok(())
+        })
     }
     
     /// Displays the largest files on a drive, sorted by size.
@@ -448,15 +456,17 @@ impl NtfsExplorer {
     /// // dataset.csv                     1.8 GB
     /// ```
     pub fn print_largest_files(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
-        let files = self.scan_largest_files(drive_letter);
-    
-        println!("Largest Files on Drive {} (Top {}):", drive_letter, count);
-        for file in files.into_iter().take(count) {
-            // Filter the file name if it's a GUID concatenation.
-            let display_name = self.filter_filename(&file.name, true);
-            println!("{:<30} {}", display_name, self.format_size(file.size));
-        }
-        Ok(())
+        validate_drive(drive_letter, |formatted_drive| {
+            let files = self.scan_largest_files(formatted_drive);
+
+            println!("Largest Files on Drive {} (Top {}):", formatted_drive, count);
+            for file in files.into_iter().take(count) {
+                // Filter the file name if it's a GUID concatenation.
+                let display_name = self.filter_filename(&file.name, true);
+                println!("{:<30} {}", display_name, self.format_size(file.size));
+            }
+            Ok(())
+        })
     }
     
     /// Displays the largest folders on a drive, sorted by total size.
@@ -480,17 +490,19 @@ impl NtfsExplorer {
     /// // C:\Program Files (x86)                                45 GB
     /// ```
     pub fn print_largest_folders(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
-        let folder_sizes = self.scan_largest_folders(drive_letter);
-    
-        // Convert to vector and sort descending by size.
-        let mut folders: Vec<(&String, &u64)> = folder_sizes.iter().collect();
-        folders.sort_by(|a, b| b.1.cmp(a.1));
-    
-        println!("Largest Folders on Drive {} (Top {}):", drive_letter, count);
-        for (folder, size) in folders.into_iter().take(count) {
-            println!("{:<50} {}", folder, self.format_size(*size));
-        }
-        Ok(())
+        validate_drive(drive_letter, |formatted_drive| {
+            let folder_sizes = self.scan_largest_folders(formatted_drive);
+
+            // Convert to vector and sort descending by size.
+            let mut folders: Vec<(&String, &u64)> = folder_sizes.iter().collect();
+            folders.sort_by(|a, b| b.1.cmp(a.1));
+
+            println!("Largest Folders on Drive {} (Top {}):", formatted_drive, count);
+            for (folder, size) in folders.into_iter().take(count) {
+                println!("{:<50} {}", folder, self.format_size(*size));
+            }
+            Ok(())
+        })
     }
     
     /// Prints the largest files modified within the last 30 days.
@@ -515,24 +527,26 @@ impl NtfsExplorer {
     /// // virtual_machine.vhdx           0.9 GB  Modified: 2023-05-20T16:25:40Z
     /// ```
     pub fn print_recent_large_files(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
-        let now = OffsetDateTime::now_utc();
-        let threshold = Duration::days(30);
-    
-        let files = self.scan_files_by_modified(drive_letter, |mod_time| now - mod_time <= threshold);
-    
-        println!(
-            "Recent Large Files on Drive {} (Modified within last 30 days):",
-            drive_letter
-        );
-        for file in files.into_iter().take(count) {
+        validate_drive(drive_letter, |formatted_drive| {
+            let now = OffsetDateTime::now_utc();
+            let threshold = Duration::days(30);
+
+            let files = self.scan_files_by_modified(formatted_drive, |mod_time| now - mod_time <= threshold);
+
             println!(
-                "{:<30} {}  Modified: {}",
-                self.filter_filename(&*file.name, true),
-                self.format_size(file.size),
-                file.modified.unwrap()
+                "Recent Large Files on Drive {} (Modified within last 30 days):",
+                formatted_drive
             );
-        }
-        Ok(())
+            for file in files.into_iter().take(count) {
+                println!(
+                    "{:<30} {}  Modified: {}",
+                    self.filter_filename(&*file.name, true),
+                    self.format_size(file.size),
+                    file.modified.unwrap()
+                );
+            }
+            Ok(())
+        })
     }
     
     /// Prints the largest files modified more than 6 months ago.
@@ -556,24 +570,26 @@ impl NtfsExplorer {
     /// // legacy_application.iso         2.8 GB  Modified: 2021-11-05T14:40:15Z
     /// ```
     pub fn print_old_large_files(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
-        let now = OffsetDateTime::now_utc();
-        let threshold = Duration::days(6 * 30); // approximate 6 months
-    
-        let files = self.scan_files_by_modified(drive_letter, |mod_time| now - mod_time >= threshold);
-    
-        println!(
-            "Old Large Files on Drive {} (Modified more than 6 months ago):",
-            drive_letter
-        );
-        for file in files.into_iter().take(count) {
+        validate_drive(drive_letter, |formatted_drive| {
+            let now = OffsetDateTime::now_utc();
+            let threshold = Duration::days(6 * 30); // approximate 6 months
+
+            let files = self.scan_files_by_modified(formatted_drive, |mod_time| now - mod_time >= threshold);
+
             println!(
-                "{:<30} {}  Modified: {}",
-                self.filter_filename(&*file.name, true),
-                self.format_size(file.size),
-                file.modified.unwrap()
+                "Old Large Files on Drive {} (Modified more than 6 months ago):",
+                formatted_drive
             );
-        }
-        Ok(())
+            for file in files.into_iter().take(count) {
+                println!(
+                    "{:<30} {}  Modified: {}",
+                    self.filter_filename(&*file.name, true),
+                    self.format_size(file.size),
+                    file.modified.unwrap()
+                );
+            }
+            Ok(())
+        })
     }
     
     /// Displays empty folders on a drive.
@@ -597,57 +613,59 @@ impl NtfsExplorer {
     /// // C:\Backups\System\2023
     /// ```
     pub fn print_empty_folders(&self, drive_letter: &str, count: usize) -> Result<(), Box<dyn Error>> {
-        println!("Scanning for empty folders on Drive {}...", drive_letter);
-        let empty_folders = self.scan_empty_folders(drive_letter);
+        validate_drive(drive_letter, |formatted_drive| {
+            println!("Scanning for empty folders on Drive {}...", formatted_drive);
+            let empty_folders = self.scan_empty_folders(formatted_drive);
 
-        // Filter out system folders which are often reported as empty due to permissions
-        let filtered_folders: Vec<String> = empty_folders.into_iter()
-            .filter(|path| !self.is_system_folder(path))
-            .collect();
+            // Filter out system folders which are often reported as empty due to permissions
+            let filtered_folders: Vec<String> = empty_folders.into_iter()
+                .filter(|path| !self.is_system_folder(path))
+                .collect();
 
-        println!("Empty Folders on Drive {} (Top {}):", drive_letter, count);
-        println!("Found {} candidate empty folders after filtering", filtered_folders.len());
+            println!("Empty Folders on Drive {} (Top {}):", drive_letter, count);
+            println!("Found {} candidate empty folders after filtering", filtered_folders.len());
 
-        // Verify each folder is truly empty using filesystem operations
-        let mut verified_empty_folders = Vec::new();
+            // Verify each folder is truly empty using filesystem operations
+            let mut verified_empty_folders = Vec::new();
 
-        for folder in &filtered_folders {
-            // Skip any path that doesn't actually exist (might be due to access rights issues)
-            let path = Path::new(folder);
-            if !path.exists() {
-                continue;
-            }
-
-            // Try to read directory entries
-            match std::fs::read_dir(path) {
-                Ok(entries) => {
-                    let is_empty = entries.count() == 0;
-                    if is_empty {
-                        verified_empty_folders.push(folder.clone());
-                    }
-                },
-                Err(_) => {
-                    // Skip folders we can't read (likely permission issues)
+            for folder in &filtered_folders {
+                // Skip any path that doesn't actually exist (might be due to access rights issues)
+                let path = Path::new(folder);
+                if !path.exists() {
                     continue;
+                }
+
+                // Try to read directory entries
+                match std::fs::read_dir(path) {
+                    Ok(entries) => {
+                        let is_empty = entries.count() == 0;
+                        if is_empty {
+                            verified_empty_folders.push(folder.clone());
+                        }
+                    },
+                    Err(_) => {
+                        // Skip folders we can't read (likely permission issues)
+                        continue;
+                    }
+                }
+
+                // Don't process more than needed for the display
+                if verified_empty_folders.len() >= count {
+                    break;
                 }
             }
 
-            // Don't process more than needed for the display
-            if verified_empty_folders.len() >= count {
-                break;
+            println!("Found {} verified empty folders", verified_empty_folders.len());
+
+            // Sort alphabetically for consistent output
+            verified_empty_folders.sort();
+
+            for folder in verified_empty_folders.into_iter().take(count) {
+                println!("{}", folder);
             }
-        }
 
-        println!("Found {} verified empty folders", verified_empty_folders.len());
-
-        // Sort alphabetically for consistent output
-        verified_empty_folders.sort();
-
-        for folder in verified_empty_folders.into_iter().take(count) {
-            println!("{}", folder);
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 }
 
