@@ -25,7 +25,7 @@ but that depends on the drive speed since it uses I/O scanning.
 (likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.) (in progress..)
 - [ ] smart commands
 - [ ] auto complete commands
-- [ ] make the ability to turn off the boot animation
+- [x] make the ability to turn off the boot animation
 - [ ] cache scans
 - [ ] ~add a re-scan option~
 - [ ] add an icon for the program (somehow)
