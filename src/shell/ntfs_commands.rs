@@ -60,7 +60,7 @@ fn print_all_help() {
     }
 }
 
-pub fn bash_commands() {
+pub fn ntfs_bash_commands() {
     prompter_fn();
 
     // wait for user input
@@ -108,7 +108,10 @@ pub fn bash_commands() {
 
             // drive analysis commands
             ["drive-space", ..] => match command.get(1) {
-                Some(drive) => explorer.print_drive_space(drive).unwrap(),
+                Some(drive) => match explorer.print_drive_space(drive) {
+                    Ok(()) => { /* all good, nothing else to do, or is there? */ }
+                    Err(e) => { eprintln!("{}", e) },
+                },
                 None => println!(
                     "drive letter required. Usage: drive-space [drive]"),
             },
