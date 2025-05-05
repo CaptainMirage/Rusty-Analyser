@@ -66,7 +66,7 @@ pub fn ntfs_bash_commands() {
     // wait for user input
     let stdin = io::stdin();
     let mut input = String::new();
-    let mut explorer = NtfsExplorer::new();
+    let explorer = NtfsExplorer::new();
     loop {
         stdin.read_line(&mut input).unwrap();
         let command: Vec<String> = input
@@ -149,7 +149,7 @@ pub fn ntfs_bash_commands() {
             },
 
             ["full-drive-analysis", ..] => match command.get(1) {
-                Some(drive) => println!("LMAOOOOOOOOOOOOOOO"),
+                Some(drive) => println!("not implemented yet even tho it takes only a few minutes"),
                 None => println!(
                     "drive letter required. Usage: full-drive-analysis [drive]"),
             },
