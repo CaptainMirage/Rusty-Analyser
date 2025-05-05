@@ -149,7 +149,7 @@ pub fn ntfs_bash_commands() {
             },
 
             ["full-drive-analysis", ..] => match command.get(1) {
-                Some(drive) => println!("not implemented yet even tho it takes only a few minutes"),
+                Some(_drive) => println!("not implemented yet even tho it takes only a few minutes"),
                 None => println!(
                     "drive letter required. Usage: full-drive-analysis [drive]"),
             },
