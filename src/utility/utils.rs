@@ -202,10 +202,9 @@ pub fn validate_drive<F>(
     action: F,
 ) -> Result<(), Box<dyn Error>>
 where
-// now accepts your explorer‑style closures that return Box<dyn Error>
     F: FnOnce(&str) -> Result<(), Box<dyn Error>>,
 {
-    // stash whatever your action returns
+    // stash whatever the action returns
     let mut result: Option<Result<(), Box<dyn Error>>> = None;
 
     // run the core validator/formatter
