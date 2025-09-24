@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <h1 align="center">Rusty Analyser</h1>
 
 ![Version Badge](https://img.shields.io/badge/Version-Beta-%23e81919?style=flat&color=%461%4340%46)
@@ -321,4 +320,5 @@ This project uses/was inspired by [Rusty Analyser](https://github.com/CaptainMir
 For inquiries or contributions, feel free to reach out!
 
 (my info is in my profile, cant be bothered to add it here)
+
 >>>>>>> cacb810 (update readme #5441)
