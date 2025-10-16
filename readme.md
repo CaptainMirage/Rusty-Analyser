@@ -22,7 +22,7 @@ but that depends on the drive speed since it uses I/O scanning.
 ## Coming Features
 - [x] a more talkative terminal
 - [x] faster scans with NTFS scanning
-(likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.) (in progress..)
+(likes of [everything](https://www.voidtools.com/), [wiztree](https://diskanalyzer.com/), etc.)
 - [ ] smart commands
 - [ ] auto complete commands
 - [x] make the ability to turn off the boot animation
@@ -158,3 +158,4 @@ This project uses/was inspired by [Rusty Analyser](https://github.com/CaptainMir
 For inquiries or contributions, feel free to reach out!
 
 (my info is in my profile, cant be bothered to add it here)
+
