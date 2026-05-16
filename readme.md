@@ -1,12 +1,15 @@
 <h1 align="center">Rusty Analyser</h1>
 
 ![Version Badge](https://img.shields.io/badge/Version-Beta-%23e81919?style=flat&color=%461%4340%46)
-![DevStage Badge](https://img.shields.io/badge/Development_Stage-InDev-%234be819?style=flat)
+![DevStage Badge](https://img.shields.io/badge/Development_Stage-Abandoned-%234be819?style=flat&color=be1818)
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CaptainMirage/Rusty-Analyser/release.yml?style=flat)
 ![Total Lines](https://tokei.rs/b1/github/CaptainMirage/Rusty-Analyser?category=code&style=flat)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/CaptainMirage/Rusty-Analyser/total?style=flat&color=%2322c2a0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 <!-- ![Update Badge](https://img.shields.io/badge/Latest_Update-¯%5C__%28ツ%29__/¯-%2318a5a3?) -->
+
+## NOTICE
+currently the project is in an abandoned state for im working on more game projects and not even on windows to test it on a proper env anymore, i will get back to this when i have the time but its a big if since i only made this to learn how NTFS works and how to make stuff with it for another project.. which is also on hold, just assume if there has not been an update in a while its probably on hold or abandoned, it works just fine with the current beta build its just not that useful, the only useful part is the code itself, so have fun!
 
 ## Overview
 
@@ -140,7 +143,8 @@ side note : im a dumbass that likes to push everything he does so if the project
 
 ## Technologies Used
 
-- just check the [cargo.toml](https://github.com/CaptainMirage/Rusty-Analyser/blob/master/Cargo.toml) file :I
+- just check the [cargo.toml](https://github.com/CaptainMirage/Rusty-Analyser/blob/master/Cargo.toml) file
+-  this project has a action script for releases which can be useful if u wanna go see it, part of what i was trying to learn with this project, it has a trigger too that i setup with commits so whenever you push a commid with a specific tag it builds it and releases by itself with some default change logs
 
 ## License
 
