@@ -3,7 +3,7 @@ use crate::utility::{
     constants::GB_TO_BYTES,
     utils::validate_drive
 };
-use ntfs_reader::{file_info::FileInfo, mft::Mft, volume::Volume};
+use ntfs_reader::{FileInfo, Mft, Volume};
 use std::{
     collections::HashMap,
     error::Error,
@@ -229,8 +229,8 @@ impl NtfsExplorer {
     
         let mut distribution: HashMap<String, u64> = HashMap::new();
     
-        mft.iterate_files(|file| {
-            let info = FileInfo::new(&mft, file);
+        for file in mft.files() {
+            let info = FileInfo::new(&file);
             if !info.is_directory {
                 let extension = Path::new(&info.name)
                     .extension()
@@ -239,7 +239,7 @@ impl NtfsExplorer {
                     .to_lowercase();
                 *distribution.entry(extension).or_insert(0) += info.size;
             }
-        });
+        }
     
         distribution
     }
@@ -251,18 +251,18 @@ impl NtfsExplorer {
         let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
     
         let mut files: Vec<FileInfo> = Vec::new();
-        mft.iterate_files(|file| {
+        for file in mft.files() {
             #[allow(unused_mut)]
-            let mut info = FileInfo::new(&mft, file);
+            let mut info = FileInfo::new(&file);
             if !info.is_directory {
                 // Convert from clusters to bytes if needed:
                 files.push(info);
             }
-        });
+        }
         files.sort_by(|a, b| b.size.cmp(&a.size));
         files
     }
-    
+
     /// Scans the NTFS drive and returns a HashMap of folder paths (up to 5 levels deep)
     /// and their total file sizes, excluding hidden folders.
     fn scan_largest_folders(&self, drive_letter: &str) -> HashMap<String, u64> {
@@ -273,18 +273,18 @@ impl NtfsExplorer {
     
         let mut folder_sizes: HashMap<String, u64> = HashMap::new();
     
-        mft.iterate_files(|file| {
-            let info = FileInfo::new(&mft, file);
+        for file in mft.files() {
+            let info = FileInfo::new(&file);
             if !info.is_directory {
                 // Convert the file's PathBuf to &str.
-                if let Some(path_str) = info.path.to_str() {
-                    if let Some(folder) = self.folder_key_from_path(path_str, drive_letter, 5) {
+                if let Some(path_str) = info.path.as_deref().map(|p| p.to_string_lossy()) {
+                    if let Some(folder) = self.folder_key_from_path(&path_str, drive_letter, 5) {
                         // Skip hidden folders if needed, e.g., folders starting with a dot.
                         *folder_sizes.entry(folder).or_insert(0) += info.size;
                     }
                 }
             }
-        });
+        }
     
         folder_sizes
     }
@@ -302,17 +302,17 @@ impl NtfsExplorer {
         let mut folder_status: HashMap<String, bool> = HashMap::new();
 
         // First pass: collect all directories with their initial "empty" status
-        mft.iterate_files(|file| {
-            let info = FileInfo::new(&mft, file);
+        for file in mft.files() {
+            let info = FileInfo::new(&file);
 
-            if let Some(path_str) = info.path.to_str() {
+            if let Some(path_str) = info.path.as_deref().map(|p| p.to_string_lossy()) {
                 if info.is_directory {
                     // Insert this directory as potentially empty (true) if not already present
-                    let folder_path = self.format_folder_path(path_str, drive_letter);
+                    let folder_path = self.format_folder_path(&path_str, drive_letter);
                     folder_status.entry(folder_path).or_insert(true);
 
                     // Mark parent as non-empty since it contains this directory
-                    if let Some(parent) = Path::new(path_str).parent() {
+                    if let Some(parent) = Path::new(&*path_str).parent() {
                         if let Some(parent_str) = parent.to_str() {
                             let parent_path = self.format_folder_path(parent_str, drive_letter);
                             folder_status.insert(parent_path, false);
@@ -320,7 +320,7 @@ impl NtfsExplorer {
                     }
                 } else {
                     // For files: mark their parent directory as non-empty
-                    if let Some(parent) = Path::new(path_str).parent() {
+                    if let Some(parent) = Path::new(&*path_str).parent() {
                         if let Some(parent_str) = parent.to_str() {
                             let parent_path = self.format_folder_path(parent_str, drive_letter);
                             folder_status.insert(parent_path, false);
@@ -328,7 +328,7 @@ impl NtfsExplorer {
                     }
                 }
             }
-        });
+        }
 
         // Filter folders that are still marked as empty
         folder_status.into_iter()
@@ -349,8 +349,8 @@ impl NtfsExplorer {
         let mft = Mft::new(volume).expect("Failed to create MFT from the volume");
     
         let mut files: Vec<FileInfo> = Vec::new();
-        mft.iterate_files(|file| {
-            let info = FileInfo::new(&mft, file);
+        for file in mft.files() {
+            let info = FileInfo::new(&file);
             if !info.is_directory {
                 if let Some(modified) = info.modified {
                     if filter(modified) {
@@ -358,7 +358,7 @@ impl NtfsExplorer {
                     }
                 }
             }
-        });
+        }
         files.sort_by(|a, b| b.size.cmp(&a.size));
         files
     }
